@@ -42,7 +42,7 @@ const STORAGE_KEY = "solana:last-connector";
 
 export function WalletProvider({ children }: PropsWithChildren) {
   const { cluster } = useCluster();
-  const chain = `solana:${cluster}`;
+const chain = cluster === 'localnet' ? 'solana:localhost' : `solana:${cluster}`;
 
   const [connectors, setConnectors] = useState<WalletConnector[]>(() =>
     typeof window === "undefined" ? [] : discoverWallets()
@@ -98,6 +98,9 @@ export function WalletProvider({ children }: PropsWithChildren) {
 
     try {
       const s = await connector.connect();
+
+      console.log("Connected to:", s.account.address);
+      
       setSession(s);
       setStatus(WALLET_STATUS.CONNECTED);
       localStorage.setItem(STORAGE_KEY, connectorId);

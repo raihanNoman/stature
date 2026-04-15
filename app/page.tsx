@@ -8,7 +8,7 @@ import { useBalance } from "./lib/hooks/use-balance";
 import { lamportsToSolString } from "./lib/lamports";
 import { useSolanaClient } from "./lib/solana-client-context";
 import { ellipsify } from "./lib/explorer";
-import { VaultCard } from "./components/vault-card";
+import StatureCard  from "./components/vault-card";
 import { GridBackground } from "./components/grid-background";
 import { ThemeToggle } from "./components/theme-toggle";
 import { ClusterSelect } from "./components/cluster-select";
@@ -98,8 +98,8 @@ export default function Home() {
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="font-black tracking-tight text-foreground">
-                  <span className="block text-6xl md:text-7xl">Anchor</span>
-                  <span className="block text-7xl md:text-8xl">Vault</span>
+                  <span className="block text-6xl md:text-7xl">Stature</span>
+                  <span className="block text-7xl md:text-8xl">Network</span>
                 </h1>
               </div>
 
@@ -262,7 +262,7 @@ export default function Home() {
             )}
 
             {/* Vault Program Section */}
-            <VaultCard />
+            <StatureCard />
           </div>
         </main>
       </div>
