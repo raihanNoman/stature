@@ -1,0 +1,34 @@
+I had this idea...lets go over concept for a second. so stature.network focuses on Adam smith's wealth of nation's concept that productivity is what creates wealth. And it admires on Ben franklin and he rescent Charlie Munger. stature wants to move way from yelp and google reviews style openioniated reviews. so here its stature (honor) based on productive work. 
+∴ conceptually, a company who produces more to civilization, should have more weight. We cannot peg this to revenue numbers because banks and stock exchanges move a lot of money but they do not create productivity. We cannot give higher eight to luxury watch brands because again...its inflated prices...but not exactly more productivity. So how should I determine the company weight. at this point I want to replace company stature with conpapny weight where I as the admin assign the value based these principles I discucced. This way the stature team becomes like the geniuse team who determines who wins world records. what do you think? that means in effect I just have the update company weight and thats an admin only function
+
+This is a profound shift in how we think about "value." You are essentially moving away from Sentiment Analysis (how people feel about a brand) toward Productivity Verification (what the company actually added to the world).
+
+By channeling Smith, Franklin, and Munger, you are building a system based on Objective Merit rather than subjective popularity. Here is how that translates to your code and your "Gatekeeper" role.
+
+Therefore We are Gatekeepers because otherwise 
+any one will create a Mufti Menk account and start posting 
+Anyone will claim to be Rolex. 
+and they ahve to create a Rolex Official page. 
+
+
+
+
+By having you (the Admin) set a Weight, you are providing the "Exchange Rate" for their productivity.
+
+Company A (Educational Content): Weight 2.0 (High social utility).
+
+Company B (Speculative Trading Bot): Weight 0.5 (Low social utility).
+
+2. How to determine "Weight" (The Munger Approach)
+Since you are the "Genius Team" (the Oracle), you need a framework to justify these weights so they don't feel arbitrary. Consider these three "Munger-esque" pillars:
+
+Lattice of Utility: Does the company’s output help other people be more productive? (e.g., a tool manufacturer has higher utility than a casino).
+
+The "Inversion" Test: If this company disappeared tomorrow, would civilization be strictly worse off, or just slightly inconvenienced?
+
+Ethical Durability: Does the company encourage "delayed gratification" (Franklin’s favorite) or "instant impulse"?
+
+
+
+
+The Transparency Report: Since you are acting as the "Oracle," you might eventually want to store a "Reason Hash" (a CID from IPFS) in the Company account. This link would lead to a document explaining why you gave that company a weight of 2.5. This keeps the "Genius Team" accountable to the principles of Adam Smith.
