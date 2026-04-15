@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solana dApp Starter",
-  description: "A minimal Next.js starter powered by @solana/kit",
+  title: "Stature",
+  description: "The decentralized reputation protocol",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",

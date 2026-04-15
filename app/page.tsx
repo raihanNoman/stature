@@ -1,271 +1,102 @@
-"use client";
+import React from "react";
+import Link from "next/link";
+import { Zap } from "lucide-react";
+import SearchUtility from "./components/serach";
 
-import { useState } from "react";
-import { lamports as sol } from "@solana/kit";
-import { toast } from "sonner";
-import { useWallet } from "./lib/wallet/context";
-import { useBalance } from "./lib/hooks/use-balance";
-import { lamportsToSolString } from "./lib/lamports";
-import { useSolanaClient } from "./lib/solana-client-context";
-import { ellipsify } from "./lib/explorer";
-import StatureCard  from "./components/vault-card";
-import { GridBackground } from "./components/grid-background";
-import { ThemeToggle } from "./components/theme-toggle";
-import { ClusterSelect } from "./components/cluster-select";
-import { WalletButton } from "./components/wallet-button";
-import { useCluster } from "./components/cluster-context";
-
-export default function Home() {
-  const { wallet, status } = useWallet();
-  const { cluster, getExplorerUrl } = useCluster();
-  const client = useSolanaClient();
-
-  const address = wallet?.account.address;
-  const balance = useBalance(address);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    if (!address) return;
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleAirdrop = async () => {
-    if (!address) return;
-    try {
-      toast.info("Requesting airdrop...");
-      const sig = await client.airdrop(address, sol(1_000_000_000n));
-      toast.success("Airdrop received!", {
-        description: sig ? (
-          <a
-            href={getExplorerUrl(`/tx/${sig}`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
-            View transaction
-          </a>
-        ) : undefined,
-      });
-    } catch (err) {
-      console.error("Airdrop failed:", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      const isRateLimited =
-        msg.includes("429") || msg.includes("Internal JSON-RPC error");
-      toast.error(
-        isRateLimited
-          ? "Devnet faucet rate-limited. Use the web faucet instead."
-          : "Airdrop failed. Try again later.",
-        isRateLimited
-          ? {
-              description: (
-                <a
-                  href="https://faucet.solana.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  Open faucet.solana.com
-                </a>
-              ),
-            }
-          : undefined
-      );
-    }
-  };
-
+export default function StatureHome() {
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      <GridBackground />
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-sm font-semibold tracking-tight">
-            Solana Starter Kit
-          </span>
+    <div className="flex min-h-screen flex-col bg-zinc-50 font-sans text-zinc-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-zinc-100">
+      {/* Navigation */}
+      <nav className="fixed top-0 z-50 w-full flex items-center justify-between px-6 py-6 md:px-12 bg-zinc-50/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/50">
+        <Link href="/">
           <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <ClusterSelect />
-            <WalletButton />
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-6xl px-6">
-          {/* Hero */}
-          <section className="pt-6 pb-20 md:pt-8 md:pb-32">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="font-black tracking-tight text-foreground">
-                  <span className="block text-6xl md:text-7xl">Stature</span>
-                  <span className="block text-7xl md:text-8xl">Network</span>
-                </h1>
-              </div>
-
-              <div className="flex max-w-2xl flex-col gap-3">
-                <p className="text-base leading-relaxed text-foreground/50">
-                  This program creates a personal vault for each user using a
-                  Program Derived Address (PDA). Connect your wallet, deposit
-                  SOL into your vault, and withdraw it anytime. Only you can
-                  access your funds.
-                </p>
-                <p className="text-sm leading-relaxed text-foreground/40">
-                  The vault is an{" "}
-                  <a
-                    href="https://www.anchor-lang.com/docs/introduction"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2"
-                  >
-                    Anchor
-                  </a>{" "}
-                  program you can deploy to localnet or devnet and modify
-                  yourself. Check the README for setup instructions.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <a
-                    href="https://solana.com/docs"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Solana docs
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
-                  <a
-                    href="https://www.anchor-lang.com/docs/introduction"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Anchor docs
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
-                  <a
-                    href="https://faucet.solana.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Faucet
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
-                </div>
-              </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white dark:bg-zinc-100 dark:text-black">
+              <Zap size={20} fill="currentColor" />
             </div>
-          </section>
-
-          {/* Template content */}
-          <div className="space-y-10 pb-20">
-            {/* Wallet Balance */}
-            {status === "connected" && address && (
-              <section className="relative w-full overflow-hidden rounded-2xl border border-border-low bg-card px-5 py-5">
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-100 dark:opacity-0"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px)
-                    `,
-                    backgroundSize: "24px 24px",
-                    mask: "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                    WebkitMask:
-                      "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                  }}
-                />
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-0 dark:opacity-100"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)
-                    `,
-                    backgroundSize: "24px 24px",
-                    mask: "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                    WebkitMask:
-                      "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                  }}
-                />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4 text-foreground/70"
-                      >
-                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium">Wallet Balance</span>
-                    <button
-                      onClick={handleCopy}
-                      className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-muted transition hover:text-foreground"
-                    >
-                      {ellipsify(address, 4)}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3 w-3"
-                      >
-                        {copied ? (
-                          <path d="M20 6 9 17l-5-5" />
-                        ) : (
-                          <>
-                            <rect
-                              width="14"
-                              height="14"
-                              x="8"
-                              y="8"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                          </>
-                        )}
-                      </svg>
-                    </button>
-                  </div>
-                  {cluster !== "mainnet" && (
-                    <button
-                      onClick={handleAirdrop}
-                      className="cursor-pointer rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium transition hover:bg-cream"
-                    >
-                      Airdrop
-                    </button>
-                  )}
-                </div>
-                <p className="relative mt-4 font-mono text-4xl font-bold tabular-nums tracking-tight">
-                  {balance.lamports != null
-                    ? lamportsToSolString(balance.lamports)
-                    : "\u2014"}
-                  <span className="ml-1.5 text-lg font-normal text-muted">
-                    SOL
-                  </span>
-                </p>
-              </section>
-            )}
-
-            {/* Vault Program Section */}
-            <StatureCard />
+            <span className="text-xl font-black tracking-tighter uppercase">Stature</span>
           </div>
-        </main>
-      </div>
+        </Link>
+        <div className="hidden gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-500 md:flex">
+          <a href="#logic" className="hover:text-black dark:hover:text-white transition-colors">The Logic</a>
+          <a href="#pillars" className="hover:text-black dark:hover:text-white transition-colors">Pillars</a>
+        </div>
+        <button className="rounded-full bg-black px-5 py-2 text-xs font-bold text-white transition-all hover:scale-105 dark:bg-white dark:text-black">
+          Connect Wallet
+        </button>
+      </nav>
+
+      {/* Hero & Search Utility */}
+      <section className="relative flex h-[85vh] flex-col items-center justify-center px-6 pt-20 text-center">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-emerald-500/10 blur-[120px] rounded-full" />
+        
+        <h1 className="max-w-5xl text-5xl font-black leading-[0.9] tracking-tighter sm:text-7xl md:text-8xl">
+          REPUTATION IS <br />
+          <span className="text-zinc-400 dark:text-zinc-800 uppercase italic">Not an Opinion.</span>
+        </h1>
+
+        <SearchUtility />
+
+        <p className="mt-8 text-sm font-mono text-zinc-500 uppercase tracking-widest">
+          Standardizing trust on the Solana Ledger
+        </p>
+
+        <div className="absolute bottom-10 animate-bounce">
+          <div className="w-px h-12 bg-zinc-300 dark:bg-zinc-700" />
+        </div>
+      </section>
+
+      {/* Content Sections */}
+      <main className="flex flex-col items-center px-6 py-20 md:px-12">
+        <section id="logic" className="w-full max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="rounded-[2.5rem] bg-zinc-100 p-10 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800">
+              <span className="text-red-500 font-bold uppercase tracking-widest text-[10px]">The Past</span>
+              <h2 className="mt-4 text-3xl font-black tracking-tight uppercase">The Review Economy</h2>
+              <ul className="mt-8 space-y-4 text-sm font-medium text-zinc-500 italic">
+                <li>✕ Anonymous "Karens" destroying businesses</li>
+                <li>✕ Bot-generated 5-star reviews</li>
+                <li>✕ Zero proof of transaction</li>
+              </ul>
+            </div>
+
+            <div className="rounded-[2.5rem] bg-black p-10 text-white shadow-2xl shadow-emerald-500/10">
+              <span className="text-emerald-400 font-bold uppercase tracking-widest text-[10px]">The Future</span>
+              <h2 className="mt-4 text-3xl font-black tracking-tight uppercase">The Stature Network</h2>
+              <ul className="mt-8 space-y-4 text-sm font-medium text-zinc-300">
+                <li>✓ Soulbound Work Credentials</li>
+                <li>✓ Witness-Verified Contracts (2:282)</li>
+                <li>✓ Immutable Solana Ledger</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="pillars" className="mt-40 w-full max-w-4xl">
+           <h2 className="text-4xl font-black tracking-tighter uppercase italic text-center mb-20">The Pillars of Stature</h2>
+           <div className="space-y-12">
+              <Pillar title="Soulbound Identity" desc="Your score is tied to your wallet. It cannot be bought, only built through verified output." />
+              <Pillar title="Cross-App Utility" desc="One score for renting, hiring, and insurance pools like Takaful Club." />
+              <Pillar title="On-Chain Integrity" desc="Every reputation point is backed by a signed transaction hash on Solana." />
+           </div>
+        </section>
+      </main>
+
+      <footer className="mt-40 border-t border-zinc-200 py-12 px-6 dark:border-zinc-800 md:px-12 flex flex-col md:flex-row justify-between items-center gap-6">
+        <span className="text-xs font-bold uppercase tracking-widest opacity-50">Stature.Network © 2026</span>
+        <div className="flex gap-8">
+          <Link href="https://contract282.com" className="text-[10px] font-bold hover:underline tracking-widest uppercase">CONTRACT 282</Link>
+          <Link href="https://takafulclub.com" className="text-[10px] font-bold hover:underline tracking-widest uppercase">TAKAFUL CLUB</Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Pillar({ title, desc }: { title: string, desc: string }) {
+  return (
+    <div className="group border-b border-zinc-200 dark:border-zinc-800 pb-8 transition-colors hover:border-black dark:hover:border-white">
+      <h3 className="text-xl font-bold uppercase tracking-tight">{title}</h3>
+      <p className="mt-2 text-zinc-500 dark:text-zinc-400 leading-relaxed">{desc}</p>
     </div>
   );
 }
