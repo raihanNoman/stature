@@ -23,7 +23,7 @@ export async function findCompanyPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = "4h5eesi3oxqnJCXUKN9TZ2y23vqkAZkSg9WAb4hWa4mG" as Address<"4h5eesi3oxqnJCXUKN9TZ2y23vqkAZkSg9WAb4hWa4mG">,
+    programAddress = "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb" as Address<"9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb">,
   } = config;
   return await getProgramDerivedAddress({
     programAddress,

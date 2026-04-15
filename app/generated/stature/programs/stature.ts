@@ -44,7 +44,7 @@ import {
 } from "../instructions";
 
 export const STATURE_PROGRAM_ADDRESS =
-  "4h5eesi3oxqnJCXUKN9TZ2y23vqkAZkSg9WAb4hWa4mG" as Address<"4h5eesi3oxqnJCXUKN9TZ2y23vqkAZkSg9WAb4hWa4mG">;
+  "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb" as Address<"9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb">;
 
 export enum StatureAccount {
   Company,
@@ -275,7 +275,7 @@ export function identifyStatureInstruction(
 }
 
 export type ParsedStatureInstruction<
-  TProgram extends string = "4h5eesi3oxqnJCXUKN9TZ2y23vqkAZkSg9WAb4hWa4mG",
+  TProgram extends string = "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb",
 > =
   | ({
       instructionType: StatureInstruction.GetUserStature;
