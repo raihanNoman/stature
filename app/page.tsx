@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import SearchUtility from "./components/serach";
@@ -35,6 +34,23 @@ export default function StatureHome() {
         </h1>
 
         <SearchUtility />
+
+
+        {/* --- Action Buttons --- */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/join/user" className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-xl blur opacity-20 group-hover:opacity-50 transition duration-300"></div>
+            <button className="relative flex h-14 items-center justify-center rounded-xl bg-black px-8 text-sm font-black uppercase tracking-widest text-white transition-transform active:scale-95 dark:bg-zinc-100 dark:text-black">
+              Join as User
+            </button>
+          </Link>
+
+          <Link href="/join/company">
+            <button className="flex h-14 items-center justify-center rounded-xl border-2 border-zinc-200 px-8 text-sm font-black uppercase tracking-widest transition-all hover:bg-zinc-100 active:scale-95 dark:border-zinc-800 dark:hover:bg-zinc-900">
+              Register Company
+            </button>
+          </Link>
+        </div>
 
         <p className="mt-8 text-sm font-mono text-zinc-500 uppercase tracking-widest">
           Standardizing trust on the Solana Ledger
