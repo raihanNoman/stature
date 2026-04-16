@@ -10,11 +10,12 @@ import {
   Lock,
   UserCog,
 } from "lucide-react";
+import { useWallet } from "../lib/wallet/context";
 
 export default function AdminPage() {
-  // Logic: Fetch the Config account via Anchor to find the 'authority' field
-  const [adminWallet, setAdminWallet] = useState<string | null>("Stat...82uY");
+  const { wallet, signer, status } = useWallet();
 
+  const adminWallet= wallet?.account.address
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100 p-6 md:p-12">
       <div className="max-w-4xl mx-auto">

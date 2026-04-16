@@ -2,16 +2,14 @@
 
 import React, { useState } from 'react';
 import { ShieldAlert, Zap, Cpu, Loader2 } from 'lucide-react';
+import useInit from './useInit';
+import { useWallet } from '@/app/lib/wallet/context';
 
 export default function InitAdminPage() {
-  const [loading, setLoading] = useState(false);
+  const { handleInitialize, loading} = useInit()
+  const { wallet, signer, status } = useWallet();
 
-  const handleInitialize = async () => {
-    setLoading(true);
-    // Logic: program.methods.initializeConfig().rpc()
-    setTimeout(() => setLoading(false), 2000);
-  };
-
+  const address= wallet?.account.address
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-zinc-50 dark:bg-black">
       <div className="max-w-md w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-10 shadow-2xl text-center">
@@ -29,7 +27,7 @@ export default function InitAdminPage() {
             <Cpu size={18} className="text-zinc-400" />
             <div>
               <p className="text-[10px] font-bold text-zinc-400 uppercase">Target Program</p>
-              <p className="text-xs font-mono">Stat...82uY</p>
+              <p className="text-xs font-mono">{address}</p>
             </div>
           </div>
         </div>
