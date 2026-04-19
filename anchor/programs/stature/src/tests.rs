@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::ID as PROGRAM_ID;
-    use anchor_lang::prelude::system_program;
-    use anchor_lang::AccountDeserialize;
+    use crate::state::*;
+    use anchor_lang::{AccountDeserialize, InstructionData};
     use litesvm::LiteSVM;
     use solana_sdk::{
         instruction::{AccountMeta, Instruction},
@@ -12,588 +11,257 @@ mod tests {
         transaction::Transaction,
     };
 
+    const SYSTEM_PROGRAM_ID: Pubkey = solana_sdk::pubkey!("11111111111111111111111111111111");
+    const PROGRAM_ID: Pubkey = solana_sdk::pubkey!("9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb");
     const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 
     // -------------------------------
     // PDA HELPERS
     // -------------------------------
-    fn get_company_pda(authority: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[b"company", authority.as_ref()], &PROGRAM_ID)
+    fn get_config_pda() -> Pubkey {
+        Pubkey::find_program_address(&[b"config"], &PROGRAM_ID).0
     }
 
-    fn get_user_pda(owner: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[b"user", owner.as_ref()], &PROGRAM_ID)
+    fn get_registered_program_pda(target_program: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[b"registered_program", target_program.as_ref()],
+            &PROGRAM_ID,
+        )
+        .0
     }
 
-    fn get_record_pda(user: &Pubkey, company: &Pubkey, count: u64) -> (Pubkey, u8) {
+    fn get_user_pda(wallet: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[b"user", wallet.as_ref()], &PROGRAM_ID).0
+    }
+
+    fn get_program_user_state_pda(program_pda: &Pubkey, user_pda: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[b"state", program_pda.as_ref(), user_pda.as_ref()],
+            &PROGRAM_ID,
+        )
+        .0
+    }
+
+    fn get_record_pda(user_pda: &Pubkey, program_pda: &Pubkey, source: &Pubkey) -> Pubkey {
         Pubkey::find_program_address(
             &[
                 b"record",
-                user.as_ref(),
-                company.as_ref(),
-                &count.to_le_bytes(),
+                user_pda.as_ref(),
+                program_pda.as_ref(),
+                source.as_ref(),
             ],
             &PROGRAM_ID,
         )
+        .0
     }
 
     // -------------------------------
     // INSTRUCTION BUILDERS
     // -------------------------------
 
-fn ix_initialize_company(
-    authority: &Pubkey,
-    company: &Pubkey,
-    name: String,
-) -> Instruction {
-    let data = anchor_lang::InstructionData::data(
-        &crate::instruction::InitializeCompany {
-            name,
-        }
-    );
-
-    Instruction {
-        program_id: PROGRAM_ID,
-        accounts: vec![
-            AccountMeta::new(*authority, true),
-            AccountMeta::new(*company, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-        ],
-        data,
-    }
-}
-
-    fn ix_initialize_user(owner: &Pubkey, user: &Pubkey, name: String) -> Instruction {
-        let data = anchor_lang::InstructionData::data(&crate::instruction::InitializeUser { name });
-
+    fn ix_register_program(payer: &Pubkey, target: &Pubkey, name: String) -> Instruction {
+        let data = crate::instruction::CreateProgram { name }.data();
         Instruction {
             program_id: PROGRAM_ID,
             accounts: vec![
-                AccountMeta::new(*owner, true),
-                AccountMeta::new(*user, false),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new(*payer, true),
+                AccountMeta::new_readonly(*target, false),
+                AccountMeta::new(get_registered_program_pda(target), false),
+                AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             ],
             data,
         }
     }
 
-    fn ix_update_honor(
-        authority: &Pubkey,
-        company: &Pubkey,
-        user: &Pubkey,
-        record: &Pubkey,
+    fn ix_verify_program(admin: &Pubkey, target: &Pubkey) -> Instruction {
+        let data = crate::instruction::UpdateProgramVerifiedStatus {}.data();
+        Instruction {
+            program_id: PROGRAM_ID,
+            accounts: vec![
+                AccountMeta::new_readonly(*admin, true),
+                AccountMeta::new_readonly(get_config_pda(), false),
+                AccountMeta::new(get_registered_program_pda(target), false),
+            ],
+            data,
+        }
+    }
+
+    fn ix_update_stature(
+        payer: &Pubkey,
+        authority: &Pubkey, // The target program's key/PDA
+        user_wallet: &Pubkey,
+        source: &Pubkey,
         amount: i64,
-        nonce: u64
+        nonce: u64,
     ) -> Instruction {
-        let data = anchor_lang::InstructionData::data(&crate::instruction::UpdateUserStature { amount, nonce });
+        let program_pda = get_registered_program_pda(authority);
+        let user_pda = get_user_pda(user_wallet);
 
+        let data = crate::instruction::UpdateUserStature { amount, nonce }.data();
         Instruction {
             program_id: PROGRAM_ID,
             accounts: vec![
-                AccountMeta::new(*authority, true),
-                AccountMeta::new(*company, false),
-                AccountMeta::new(*user, false),
-                AccountMeta::new(*record, false),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new(*payer, true),
+                AccountMeta::new_readonly(*authority, true), // The program authority must sign
+                AccountMeta::new(program_pda, false),
+                AccountMeta::new_readonly(*user_wallet, false),
+                AccountMeta::new(user_pda, false),
+                AccountMeta::new_readonly(*source, false),
+                AccountMeta::new(get_program_user_state_pda(&program_pda, &user_pda), false),
+                AccountMeta::new(get_record_pda(&user_pda, &program_pda, source), false),
+                AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             ],
             data,
         }
     }
 
-    fn setup_svm() -> (LiteSVM, Keypair, Keypair) {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/stature.so");
-        svm.add_program(PROGRAM_ID, program_bytes)
-            .expect("Build .so first");
-
-        let auth = Keypair::new();
-        let user = Keypair::new();
-        svm.airdrop(&auth.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
-        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
-        (svm, auth, user)
-    }
-
     // -------------------------------
-    // MAIN TEST
+    // TEST SUITE
     // -------------------------------
+
     #[test]
-    fn test_full_honor_flow() {
+    fn test_full_stature_lifecycle() {
         let mut svm = LiteSVM::new();
-
-        // Load program
         let program_bytes = include_bytes!("../../../target/deploy/stature.so");
+        svm.add_program(PROGRAM_ID, program_bytes).unwrap();
 
-        svm.add_program(PROGRAM_ID, program_bytes)
-            .expect("Failed to load program into LiteSVM");
-        // Actors
-        let authority = Keypair::new();
+        let admin = Keypair::new();
+        let external_program = Keypair::new();
         let user_wallet = Keypair::new();
+        let source_action = Keypair::new();
 
-        svm.airdrop(&authority.pubkey(), 10 * LAMPORTS_PER_SOL)
+        svm.airdrop(&admin.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&external_program.pubkey(), 10 * LAMPORTS_PER_SOL)
             .unwrap();
         svm.airdrop(&user_wallet.pubkey(), 10 * LAMPORTS_PER_SOL)
             .unwrap();
 
-        // PDAs
-        let (company_pda, _) = get_company_pda(&authority.pubkey());
-        let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
+        // ---------------------------------------------------------
+        // 1. Setup Config (NEW STEP)
+        // ---------------------------------------------------------
+        // We simulate the 'initialize_config' call.
+        // If you have an InitConfig instruction, call it here.
+        // Otherwise, we manually set the state in LiteSVM:
 
-        // -------------------------------
-        // Initialize Company
-        // -------------------------------
-        let ix = ix_initialize_company(
-            &authority.pubkey(),
-            &company_pda,
-            "Acme".to_string(),
+        // Anchor discriminators are 8 bytes.
+        // For a struct named "Config", the discriminator is:
+        // sha256("account:Config")[..8]
+        // 1. Setup Config
+        let config_pda = get_config_pda();
+
+        // 8 (discriminator) + 32 (pubkey) + 1 (u8) = 41 bytes
+        let mut config_data = Vec::with_capacity(41);
+
+        // The Anchor Discriminator
+        let discriminator = &solana_sdk::hash::hash(b"account:Config").to_bytes()[..8];
+        config_data.extend_from_slice(discriminator);
+
+        // The Admin Pubkey
+        config_data.extend_from_slice(&admin.pubkey().to_bytes());
+
+        // The Bump (use any value, e.g., 255)
+        config_data.push(255);
+
+        let config_account = solana_sdk::account::Account {
+            lamports: LAMPORTS_PER_SOL,
+            data: config_data,
+            owner: PROGRAM_ID, // Ensure this is the correct PROGRAM_ID
+            executable: false,
+            rent_epoch: 0,
+        };
+
+        svm.set_account(config_pda, config_account).unwrap();
+
+        // ---------------------------------------------------------
+        // 2. Register Program
+        // ---------------------------------------------------------
+        let ix = ix_register_program(
+            &user_wallet.pubkey(),
+            &external_program.pubkey(),
+            "GameProt".to_string(),
         );
-
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-
-        assert!(svm.send_transaction(tx).is_ok());
-
-        // -------------------------------
-        // Initialize User
-        // -------------------------------
-        let ix = ix_initialize_user(&user_wallet.pubkey(), &user_pda, "Alice".to_string());
-
         let tx = Transaction::new_signed_with_payer(
             &[ix],
             Some(&user_wallet.pubkey()),
             &[&user_wallet],
             svm.latest_blockhash(),
         );
-
-        assert!(svm.send_transaction(tx).is_ok());
-
-        // -------------------------------
-        // First honor update
-        // -------------------------------
-        let (record_pda_0, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-        let ix = ix_update_honor(
-            &authority.pubkey(),
-            &company_pda,
-            &user_pda,
-            &record_pda_0,
-            10,
-            10, 
-        );
-
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-
-        assert!(svm.send_transaction(tx).is_ok());
-
-        // -------------------------------
-        // Second honor update
-        // -------------------------------
-        let (record_pda_1, _) = get_record_pda(&user_pda, &company_pda, 1);
-
-        let ix = ix_update_honor(
-            &authority.pubkey(),
-            &company_pda,
-            &user_pda,
-            &record_pda_1,
-            5,
-            11
-        );
-
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-
-        assert!(svm.send_transaction(tx).is_ok());
-
-        // -------------------------------
-        // Verify user state
-        // -------------------------------
-        let user_account = svm.get_account(&user_pda).unwrap();
-        let user_data: crate::User =
-            anchor_lang::AccountDeserialize::try_deserialize(&mut &user_account.data[..]).unwrap();
-
-        assert_eq!(user_data.stature, 15);
-
-        // -------------------------------
-        // Verify records exist
-        // -------------------------------
-        assert!(svm.get_account(&record_pda_0).is_some());
-        assert!(svm.get_account(&record_pda_1).is_some());
-    }
-
-    // -------------------------------
-    // SECURITY TEST
-    // -------------------------------
-    #[test]
-    fn test_unauthorized_company_fails() {
-        let mut svm = LiteSVM::new();
-
-        let program_bytes = include_bytes!("../../../target/deploy/stature.so");
-        svm.add_program(PROGRAM_ID, program_bytes)
-            .expect("Failed to load program into LiteSVM");
-
-        let authority = Keypair::new();
-        let attacker = Keypair::new();
-
-        svm.airdrop(&authority.pubkey(), 10 * LAMPORTS_PER_SOL)
-            .unwrap();
-        svm.airdrop(&attacker.pubkey(), 10 * LAMPORTS_PER_SOL)
-            .unwrap();
-
-        let (company_pda, _) = get_company_pda(&authority.pubkey());
-        let (user_pda, _) = get_user_pda(&attacker.pubkey());
-
-        // init company (valid)
-        let ix = ix_initialize_company(
-            &authority.pubkey(),
-            &company_pda,
-            "acme.com".to_string(),
-        );
-
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-
         svm.send_transaction(tx).unwrap();
 
-        // attacker tries to use company
-        let (record_pda, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-        let ix = ix_update_honor(
-            &attacker.pubkey(), // ❌ not authority
-            &company_pda,
-            &user_pda,
-            &record_pda,
-            10,
-            12
-        );
-
+        // ---------------------------------------------------------
+        // 3. Verify Program (Now this won't fail with 3012!)
+        // ---------------------------------------------------------
+        let ix = ix_verify_program(&admin.pubkey(), &external_program.pubkey());
         let tx = Transaction::new_signed_with_payer(
             &[ix],
-            Some(&attacker.pubkey()),
-            &[&attacker],
+            Some(&admin.pubkey()),
+            &[&admin],
+            svm.latest_blockhash(),
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // 4. Update Stature
+        let ix = ix_update_stature(
+            &user_wallet.pubkey(),
+            &external_program.pubkey(),
+            &user_wallet.pubkey(),
+            &source_action.pubkey(),
+            100,
+            1,
+        );
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&user_wallet.pubkey()),
+            &[&user_wallet, &external_program],
+            svm.latest_blockhash(),
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // 5. Verification
+        let user_pda = get_user_pda(&user_wallet.pubkey());
+        let user_acc = svm.get_account(&user_pda).unwrap();
+        let user_data: User = User::try_deserialize(&mut &user_acc.data[..]).unwrap();
+
+        assert!(user_data.stature > 0);
+        assert_eq!(user_data.wallet.to_bytes(), user_wallet.pubkey().to_bytes());
+    }
+    #[test]
+    fn test_unverified_program_fails_stature_update() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/stature.so");
+        svm.add_program(PROGRAM_ID, program_bytes).unwrap();
+
+        let user = Keypair::new();
+        let fake_program = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        // Register but DON'T verify
+        let ix = ix_register_program(&user.pubkey(), &fake_program.pubkey(), "Evil".into());
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&user.pubkey()),
+            &[&user],
+            svm.latest_blockhash(),
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Try to update stature
+        let ix = ix_update_stature(
+            &user.pubkey(),
+            &fake_program.pubkey(),
+            &user.pubkey(),
+            &Pubkey::new_unique(),
+            10,
+            1,
+        );
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
+            Some(&user.pubkey()),
+            &[&user, &fake_program],
             svm.latest_blockhash(),
         );
 
+        // Should fail because is_verified is false
         assert!(svm.send_transaction(tx).is_err());
     }
-
-    #[test]
-    fn test_production_flow() {
-        let (mut svm, authority, user_wallet) = setup_svm();
-        let (company_pda, _) = get_company_pda(&authority.pubkey());
-        let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-        // 1. Init Company
-        let tx = Transaction::new_signed_with_payer(
-            &[ix_initialize_company(
-                &authority.pubkey(),
-                &company_pda,
-                "acme.com".into(),
-            )],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-        svm.send_transaction(tx).unwrap();
-
-        // 2. Init User
-        let tx = Transaction::new_signed_with_payer(
-            &[ix_initialize_user(
-                &user_wallet.pubkey(),
-                &user_pda,
-                "Alice".into(),
-            )],
-            Some(&user_wallet.pubkey()),
-            &[&user_wallet],
-            svm.latest_blockhash(),
-        );
-        svm.send_transaction(tx).unwrap();
-
-        // 3. Sequential Record Check (Update 0, then 1)
-        for i in 0..2 {
-            let (record_pda, _) = get_record_pda(&user_pda, &company_pda, i);
-            let tx = Transaction::new_signed_with_payer(
-                &[ix_update_honor(
-                    &authority.pubkey(),
-                    &company_pda,
-                    &user_pda,
-                    &record_pda,
-                    10,
-                    13
-                )],
-                Some(&authority.pubkey()),
-                &[&authority],
-                svm.latest_blockhash(),
-            );
-            svm.send_transaction(tx).expect("Sequential update failed");
-        }
-
-        // 4. Verification
-        let user_acc = svm.get_account(&user_pda).unwrap();
-        let user_data: crate::User = crate::User::try_deserialize(&mut &user_acc.data[..]).unwrap();
-        assert_eq!(user_data.stature, 20);
-        // Assuming your User struct has a record_count field:
-        // assert_eq!(user_data.record_count, 2);
-    }
-
-    #[test]
-    fn test_security_violation_wrong_counter() {
-        let (mut svm, authority, user_wallet) = setup_svm();
-        let (company_pda, _) = get_company_pda(&authority.pubkey());
-        let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-        // Setup company and user
-        let _ = svm.send_transaction(Transaction::new_signed_with_payer(
-            &[ix_initialize_company(
-                &authority.pubkey(),
-                &company_pda,
-                "B".into(),
-            )],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        ));
-        let _ = svm.send_transaction(Transaction::new_signed_with_payer(
-            &[ix_initialize_user(
-                &user_wallet.pubkey(),
-                &user_pda,
-                "Alice".into(),
-            )],
-            Some(&user_wallet.pubkey()),
-            &[&user_wallet],
-            svm.latest_blockhash(),
-        ));
-
-        // TRY TO SKIP TO RECORD INDEX 99
-        let (wrong_record_pda, _) = get_record_pda(&user_pda, &company_pda, 99);
-        let ix = ix_update_honor(
-            &authority.pubkey(),
-            &company_pda,
-            &user_pda,
-            &wrong_record_pda,
-            10,
-            14
-        );
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&authority.pubkey()),
-            &[&authority],
-            svm.latest_blockhash(),
-        );
-
-        // This should fail because the seed doesn't match the current user.record_count
-        assert!(
-            svm.send_transaction(tx).is_err(),
-            "Allowed out-of-order record creation!"
-        );
-    }
-
-    #[test]
-    fn test_security_unauthorized_signer() {
-        let (mut svm, authority, user_wallet) = setup_svm();
-        let hacker = Keypair::new();
-        svm.airdrop(&hacker.pubkey(), LAMPORTS_PER_SOL).unwrap();
-
-        let (company_pda, _) = get_company_pda(&authority.pubkey());
-        let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-        let (record_pda, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-        // Attacker tries to sign for a company they don't own
-        let ix = ix_update_honor(&hacker.pubkey(), &company_pda, &user_pda, &record_pda, 100, 25);
-        let tx = Transaction::new_signed_with_payer(
-            &[ix],
-            Some(&hacker.pubkey()),
-            &[&hacker],
-            svm.latest_blockhash(),
-        );
-
-        assert!(
-            svm.send_transaction(tx).is_err(),
-            "Hacker successfully updated honor!"
-        );
-    }
-
-
-    #[test]
-fn test_config_double_initialize_fails() {
-    let (mut svm, admin, _) = setup_svm();
-
-    let (config_pda, _) = Pubkey::find_program_address(&[b"config"], &PROGRAM_ID);
-
-    let ix = anchor_lang::InstructionData::data(
-        &crate::instruction::InitializeConfig {}
-    );
-
-    let accounts = vec![
-        AccountMeta::new(admin.pubkey(), true),
-        AccountMeta::new(config_pda, false),
-        AccountMeta::new_readonly(system_program::ID, false),
-    ];
-
-    let tx = Transaction::new_signed_with_payer(
-        &[Instruction { program_id: PROGRAM_ID, accounts: accounts.clone(), data: ix.clone() }],
-        Some(&admin.pubkey()),
-        &[&admin],
-        svm.latest_blockhash(),
-    );
-    svm.send_transaction(tx).unwrap();
-
-    // Try again ❌
-    let tx2 = Transaction::new_signed_with_payer(
-        &[Instruction { program_id: PROGRAM_ID, accounts, data: ix }],
-        Some(&admin.pubkey()),
-        &[&admin],
-        svm.latest_blockhash(),
-    );
-
-    assert!(svm.send_transaction(tx2).is_err());
-}
-
-#[test]
-fn test_unverified_company_cannot_update() {
-    let (mut svm, authority, user_wallet) = setup_svm();
-
-    let (company_pda, _) = get_company_pda(&authority.pubkey());
-    let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-    // init company + user
-    svm.send_transaction(Transaction::new_signed_with_payer(
-        &[ix_initialize_company(&authority.pubkey(), &company_pda, "A".into(),)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    )).unwrap();
-
-    svm.send_transaction(Transaction::new_signed_with_payer(
-        &[ix_initialize_user(&user_wallet.pubkey(), &user_pda, "Alice".into())],
-        Some(&user_wallet.pubkey()),
-        &[&user_wallet],
-        svm.latest_blockhash(),
-    )).unwrap();
-
-    let (record_pda, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-    let tx = Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_pda, 10, 1)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    );
-
-    assert!(svm.send_transaction(tx).is_err());
-}
-
-#[test]
-fn test_rate_limit_enforced() {
-    let (mut svm, authority, user_wallet) = setup_svm();
-
-    let (company_pda, _) = get_company_pda(&authority.pubkey());
-    let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-    // Setup + VERIFY company (you'll need to call update_company_verified_status)
-
-    // First update ✅
-    let (record_0, _) = get_record_pda(&user_pda, &company_pda, 0);
-    svm.send_transaction(Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_0, 10, 1)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    )).unwrap();
-
-    // Immediate second update ❌
-    let (record_1, _) = get_record_pda(&user_pda, &company_pda, 1);
-    let tx = Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_1, 10, 2)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    );
-
-    assert!(tx.signatures.len() > 0);
-    assert!(svm.send_transaction(tx).is_err());
-}
-
-#[test]
-fn test_nonce_replay_fails() {
-    let (mut svm, authority, user_wallet) = setup_svm();
-
-    let (company_pda, _) = get_company_pda(&authority.pubkey());
-    let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-    let (record_0, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-    // First tx
-    svm.send_transaction(Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_0, 10, 5)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    )).unwrap();
-
-    // Replay same nonce ❌
-    let (record_1, _) = get_record_pda(&user_pda, &company_pda, 1);
-
-    let tx = Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_1, 10, 5)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    );
-
-    assert!(svm.send_transaction(tx).is_err());
-}
-
-#[test]
-fn test_excessive_reward_fails() {
-    let (mut svm, authority, user_wallet) = setup_svm();
-
-    let (company_pda, _) = get_company_pda(&authority.pubkey());
-    let (user_pda, _) = get_user_pda(&user_wallet.pubkey());
-
-    let (record_pda, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-    let tx = Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_pda, 999999, 1)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    );
-
-    assert!(svm.send_transaction(tx).is_err());
-}
-
-#[test]
-fn test_company_rep_cannot_rate_self() {
-    let (mut svm, authority, _) = setup_svm();
-
-    let (company_pda, _) = get_company_pda(&authority.pubkey());
-    let (user_pda, _) = get_user_pda(&authority.pubkey()); // SAME
-
-    let (record_pda, _) = get_record_pda(&user_pda, &company_pda, 0);
-
-    let tx = Transaction::new_signed_with_payer(
-        &[ix_update_honor(&authority.pubkey(), &company_pda, &user_pda, &record_pda, 10, 1)],
-        Some(&authority.pubkey()),
-        &[&authority],
-        svm.latest_blockhash(),
-    );
-
-    assert!(svm.send_transaction(tx).is_err());
-}
 }

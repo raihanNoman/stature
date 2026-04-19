@@ -5,16 +5,16 @@ pub enum ErrorCode {
     #[msg("Arithmetic overflow while updating values")]
     Overflow,
 
-    #[msg("Company is suspended and cannot perform this action")]
-    CompanySuspended,
+    #[msg("Registered Program is suspended and cannot perform this action")]
+    ProgramSuspended,
 
-    #[msg("Company must be verified before updating user stature")]
-    CompanyNotVerified,
+    #[msg("Registered Program must be verified before updating user stature")]
+    ProgramNotVerified,
           
     #[msg("User is suspended and cannot receive updates")]
     UserSuspended,
 
-    #[msg("Company weight out of bounds; must be between 0 and 10. verification or admin action required")]
+    #[msg("Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required")]
     InvalidWeight, 
 
     #[msg("Invalid nonce: must be strictly increasing to prevent replay attacks")]
@@ -29,7 +29,7 @@ pub enum ErrorCode {
     #[msg("Unauthorized: only the program admin can perform this action")]
     AdminActionOnly, 
 
-    #[msg("Company has reached its update limit; request a cap increase from admin")]
+    #[msg("Registered Program has reached its update limit; request a cap increase from admin")]
     RequestLimitIncrease, 
 
     #[msg("Stature update amount exceeds allowed bounds")]
@@ -39,7 +39,7 @@ pub enum ErrorCode {
     StringTooLong, 
 
 
-    #[msg("Cannot assign stature to yourself via your company")]
+    #[msg("Cannot assign stature to yourself via your Registered Program")]
     CannotSelfAssignStature, 
 
     #[msg("Cannot re-initialize account after already intialized once")]

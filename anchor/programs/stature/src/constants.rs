@@ -9,12 +9,12 @@ use anchor_lang::prelude::*;
 
 // pub const PROGRAM_AUTHOR: &str = "My Personal wallet key";
 pub const MAX_COMPANY_WEIGHT: u8 = 10; // used by admin
-pub const MAX_REWARD: i64 = 100;
-pub const MAX_SLASH: i64 = 20;
-pub const MAX_USER_STATURE_UPDATES_BY_COMPANY: u64 = 100;
+// pub const MAX_REWARD: i64 = 100;
+// pub const MAX_SLASH: i64 = 20;
+// pub const MAX_USER_STATURE_UPDATES_BY_COMPANY: u64 = 100;
 pub const ANCHOR_DISCRIMINATOR : usize = 8;
-pub const RATE_LIMIT_SECONDS: i64 = 300; // 5 minutes
+// pub const RATE_LIMIT_SECONDS: i64 = 300; // 5 minutes
 
-pub const HARD_CAP_USER_STATURE_RECORDS: u64 = 1000;
+// pub const HARD_CAP_USER_STATURE_RECORDS: u64 = 1000;
 // pub const HARD_CAP_USER_STATURE_PER_COMPANY: u64 = 10000;
 // pub const HARD_CAP_COMPANY_STATURE: u64 = 100000;

@@ -20,20 +20,20 @@ custom-heap = []
 custom-panic = []
 anchor-debug = []
 
+
+
+# [lints.rust]
+# unexpected_cfgs = { level = "warn", check-cfg = [
+#     'cfg(target_os, values("solana"))',
+#     'cfg(feature, values("anchor-debug", "custom-heap", "custom-panic"))',
+# ] }
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(target_os, values("solana"))',
-    'cfg(feature, values("anchor-debug", "custom-heap", "custom-panic"))'
-] }
-
-
-
 [dev-dependencies]
-litesvm = "=0.7.1"
-solana-sdk = "2.3"
-solana-system-interface = "2.0.0"
-
+# Force everything to the 3.0.x branch to match your solana-cli 3.1
+solana-sdk = "=3.0.0"
+solana-program-pack = "=3.0.0"
+solana-system-interface = "=3.0.0"
+# If litesvm is causing the bloat, try updating it or temporary commenting it out
+litesvm = "0.9.1"
