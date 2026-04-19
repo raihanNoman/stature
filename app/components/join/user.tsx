@@ -2,19 +2,69 @@
 
 import React, { useState } from "react";
 import { Loader2, UserPlus, Shield } from "lucide-react";
+import { getCreateUserInstructionAsync } from "@/app/generated/stature";
+import { useWallet } from "@/app/lib/wallet/context";
+import { useSendTransaction } from "@/app/lib/hooks/use-send-transaction";
+import { useCluster } from "../cluster-context";
+import { toast } from "sonner";
+import { client } from "@/app/lib/aws";
+import { parseTransactionError } from "@/app/lib/errors";
 
 export default function RegisterUserForm() {
+    const { signer } = useWallet();
+    const { send, isSending } = useSendTransaction();
+    const { getExplorerUrl } = useCluster();
+
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    // 1. Check wallet connection
-    // 2. Call Anchor initialize_user(name)
-    // 3. Create UserProfile in Amplify
-    setTimeout(() => setLoading(false), 2000);
+
+    try {
+      setLoading(true);
+      if (!signer) throw "no signer";
+
+      console.log("Registering user...", { name });
+
+      // 1. SOLANA: Call Anchor instruction 'initialize_user'
+      // const tx = await program.methods.initializeuser(name)...
+
+      const ix = await getCreateUserInstructionAsync({
+        'owner': signer,
+        name,
+      });
+      const pda = ix.accounts[1]?.address;
+      const sig = await send({ instructions: [ix] });
+      const txUrl = getExplorerUrl(`/tx/${sig}`);
+
+      toast.success("created user on solana!" + txUrl);
+      console.log("✅ success: initialized user", txUrl);
+
+      // 2. AMPLIFY: Store rich metadata using PDA as ID
+      // await client.models.userProfile.create({ id: userPda, name, description })
+      // later we will have an emit from solana -> amplify lamda -> have it saved in amplify
+
+      const { data, errors } = await client.models.User.create({
+       'wallet': signer.address, 
+      });
+
+      if (!data || errors) {
+        console.log("err creating user on amplify", errors);
+        throw "amplify err";
+      }
+
+      console.log("✅ Registration request submitted for verification!");
+    } catch (e) {
+                  const errorMessage = parseTransactionError(e);
+      
+      toast.error("Failed to initialize user" + errorMessage);
+      console.log("🚩 err initializeing config", errorMessage, e);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <form onSubmit={handleRegister} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 md:p-12 rounded-[2.5rem] shadow-2xl">

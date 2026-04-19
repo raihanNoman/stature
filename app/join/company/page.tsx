@@ -6,7 +6,7 @@ import {
   Zap,
   BarChart3,
 } from "lucide-react";
-import RegisterCompanyForm from "@/app/components/join/company";
+import RegisterCompanyForm from "@/app/components/join/program";
 import StepsFlow from "@/app/components/StepsFlow";
 
 // The Company Journey Logic

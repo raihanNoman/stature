@@ -1,14 +1,15 @@
 "use client";
 
 import { useCluster } from "@/app/components/cluster-context";
-import { getInitializeConfigInstructionAsync } from "@/app/generated/stature";
+import { getCreateAdminInstructionAsync } from "@/app/generated/stature";
+import { parseTransactionError } from "@/app/lib/errors";
 import { useSendTransaction } from "@/app/lib/hooks/use-send-transaction";
 import { useWallet } from "@/app/lib/wallet/context";
-import { useState, } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function useInit() {
-  const {  signer, } = useWallet();
+  const { signer } = useWallet();
   const { send, isSending } = useSendTransaction();
   const { getExplorerUrl } = useCluster();
 
@@ -19,7 +20,7 @@ export default function useInit() {
       setLoading(true);
       if (!signer) throw "no signer";
 
-      const ix = await getInitializeConfigInstructionAsync({
+      const ix = await getCreateAdminInstructionAsync({
         admin: signer,
       });
 
@@ -30,8 +31,9 @@ export default function useInit() {
       toast.success("Config created!" + txUrl);
       console.log("✅ success: initialized config", txUrl);
     } catch (e) {
-      toast.error("Failed to initialize user");
-      console.log("🚩 err initializeing config", e);
+      const errorMessage = parseTransactionError(e);
+      toast.error("Failed to initialize user" + errorMessage);
+      console.log("🚩 err initializeing config", errorMessage, e);
     } finally {
       setLoading(false);
     }

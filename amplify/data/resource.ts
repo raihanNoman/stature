@@ -61,8 +61,12 @@ const schema = a
         programPda: a.string().required(),
         user: a.belongsTo("User", "userWallet"),
         program: a.belongsTo("Program", "programPda"),
-
       })
+      .secondaryIndexes((index) => [
+        index("userWallet").queryField("programsByUser"),
+        index("programPda").queryField("usersByProgram"),
+      ])
+
       .authorization((allow) => [
         allow.guest().to(["read"]),
         // Usually, you'd want logic where the User or Program Admin can manage this

@@ -24,8 +24,8 @@ export const STATURE_ERROR__PROGRAM_NOT_VERIFIED = 0x1772; // 6002
 export const STATURE_ERROR__USER_SUSPENDED = 0x1773; // 6003
 /** InvalidWeight: Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required */
 export const STATURE_ERROR__INVALID_WEIGHT = 0x1774; // 6004
-/** InvalidNonce: Invalid nonce: must be strictly increasing to prevent replay attacks */
-export const STATURE_ERROR__INVALID_NONCE = 0x1775; // 6005
+/** InvalidSourceOwner: The source account must be owned by the registered program */
+export const STATURE_ERROR__INVALID_SOURCE_OWNER = 0x1775; // 6005
 /** RateLimited: Rate limit exceeded: please wait before updating this user again */
 export const STATURE_ERROR__RATE_LIMITED = 0x1776; // 6006
 /** InvalidRecord: Invalid or malformed stature record */
@@ -49,8 +49,8 @@ export type StatureError =
   | typeof STATURE_ERROR__ADMIN_ACTION_ONLY
   | typeof STATURE_ERROR__ALREADY_INITIALIZED
   | typeof STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE
-  | typeof STATURE_ERROR__INVALID_NONCE
   | typeof STATURE_ERROR__INVALID_RECORD
+  | typeof STATURE_ERROR__INVALID_SOURCE_OWNER
   | typeof STATURE_ERROR__INVALID_WEIGHT
   | typeof STATURE_ERROR__OVERFLOW
   | typeof STATURE_ERROR__PROGRAM_NOT_VERIFIED
@@ -68,8 +68,8 @@ if (process.env.NODE_ENV !== "production") {
     [STATURE_ERROR__ADMIN_ACTION_ONLY]: `Unauthorized: only the program admin can perform this action`,
     [STATURE_ERROR__ALREADY_INITIALIZED]: `Cannot re-initialize account after already intialized once`,
     [STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE]: `Cannot assign stature to yourself via your Registered Program`,
-    [STATURE_ERROR__INVALID_NONCE]: `Invalid nonce: must be strictly increasing to prevent replay attacks`,
     [STATURE_ERROR__INVALID_RECORD]: `Invalid or malformed stature record`,
+    [STATURE_ERROR__INVALID_SOURCE_OWNER]: `The source account must be owned by the registered program`,
     [STATURE_ERROR__INVALID_WEIGHT]: `Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required`,
     [STATURE_ERROR__OVERFLOW]: `Arithmetic overflow while updating values`,
     [STATURE_ERROR__PROGRAM_NOT_VERIFIED]: `Registered Program must be verified before updating user stature`,

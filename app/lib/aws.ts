@@ -4,7 +4,8 @@ import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import { UpdateStatureEvent } from "../generated/stature";
 
-export const AWS_STATURE_API_URL = outputs.custom.API.StatureApi.endpoint;
+
+export const POST_UPATE_STATURE_API_URL = outputs.custom.API.StatureApi.endpoint + "post-update-stature"
 export interface PostUpdateStatureEventRequest extends UpdateStatureEvent {
   signature: string;
 }

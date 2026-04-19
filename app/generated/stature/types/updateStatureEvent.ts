@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   getAddressDecoder,
   getAddressEncoder,
@@ -14,49 +16,57 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
 } from "@solana/kit";
 
 export type UpdateStatureEvent = {
-  user: Address;
+  userWallet: Address;
   program: Address;
-  source: Address;
-  amount: bigint;
+  programSourceAccount: Address;
+  stature: bigint;
+  memo: string;
   timestamp: bigint;
 };
 
 export type UpdateStatureEventArgs = {
-  user: Address;
+  userWallet: Address;
   program: Address;
-  source: Address;
-  amount: number | bigint;
+  programSourceAccount: Address;
+  stature: number | bigint;
+  memo: string;
   timestamp: number | bigint;
 };
 
-export function getUpdateStatureEventEncoder(): FixedSizeEncoder<UpdateStatureEventArgs> {
+export function getUpdateStatureEventEncoder(): Encoder<UpdateStatureEventArgs> {
   return getStructEncoder([
-    ["user", getAddressEncoder()],
+    ["userWallet", getAddressEncoder()],
     ["program", getAddressEncoder()],
-    ["source", getAddressEncoder()],
-    ["amount", getI64Encoder()],
+    ["programSourceAccount", getAddressEncoder()],
+    ["stature", getI64Encoder()],
+    ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ["timestamp", getI64Encoder()],
   ]);
 }
 
-export function getUpdateStatureEventDecoder(): FixedSizeDecoder<UpdateStatureEvent> {
+export function getUpdateStatureEventDecoder(): Decoder<UpdateStatureEvent> {
   return getStructDecoder([
-    ["user", getAddressDecoder()],
+    ["userWallet", getAddressDecoder()],
     ["program", getAddressDecoder()],
-    ["source", getAddressDecoder()],
-    ["amount", getI64Decoder()],
+    ["programSourceAccount", getAddressDecoder()],
+    ["stature", getI64Decoder()],
+    ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["timestamp", getI64Decoder()],
   ]);
 }
 
-export function getUpdateStatureEventCodec(): FixedSizeCodec<
+export function getUpdateStatureEventCodec(): Codec<
   UpdateStatureEventArgs,
   UpdateStatureEvent
 > {

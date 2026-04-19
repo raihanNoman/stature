@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   assertAccountExists,
   assertAccountsExist,
   combineCodec,
@@ -23,19 +25,23 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Account,
   type Address,
+  type Codec,
+  type Decoder,
   type EncodedAccount,
+  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
@@ -54,31 +60,37 @@ export function getStatureRecordDiscriminatorBytes() {
 export type StatureRecord = {
   discriminator: ReadonlyUint8Array;
   registeredProgram: Address;
+  registeredProgramSourceAccount: Address;
   user: Address;
-  amount: bigint;
+  stature: bigint;
   timestamp: bigint;
+  memo: string;
   userRecordIdx: bigint;
   bump: number;
 };
 
 export type StatureRecordArgs = {
   registeredProgram: Address;
+  registeredProgramSourceAccount: Address;
   user: Address;
-  amount: number | bigint;
+  stature: number | bigint;
   timestamp: number | bigint;
+  memo: string;
   userRecordIdx: number | bigint;
   bump: number;
 };
 
 /** Gets the encoder for {@link StatureRecordArgs} account data. */
-export function getStatureRecordEncoder(): FixedSizeEncoder<StatureRecordArgs> {
+export function getStatureRecordEncoder(): Encoder<StatureRecordArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["registeredProgram", getAddressEncoder()],
+      ["registeredProgramSourceAccount", getAddressEncoder()],
       ["user", getAddressEncoder()],
-      ["amount", getI64Encoder()],
+      ["stature", getI64Encoder()],
       ["timestamp", getI64Encoder()],
+      ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["userRecordIdx", getU64Encoder()],
       ["bump", getU8Encoder()],
     ]),
@@ -87,20 +99,22 @@ export function getStatureRecordEncoder(): FixedSizeEncoder<StatureRecordArgs> {
 }
 
 /** Gets the decoder for {@link StatureRecord} account data. */
-export function getStatureRecordDecoder(): FixedSizeDecoder<StatureRecord> {
+export function getStatureRecordDecoder(): Decoder<StatureRecord> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["registeredProgram", getAddressDecoder()],
+    ["registeredProgramSourceAccount", getAddressDecoder()],
     ["user", getAddressDecoder()],
-    ["amount", getI64Decoder()],
+    ["stature", getI64Decoder()],
     ["timestamp", getI64Decoder()],
+    ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["userRecordIdx", getU64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }
 
 /** Gets the codec for {@link StatureRecord} account data. */
-export function getStatureRecordCodec(): FixedSizeCodec<
+export function getStatureRecordCodec(): Codec<
   StatureRecordArgs,
   StatureRecord
 > {
@@ -162,8 +176,4 @@ export async function fetchAllMaybeStatureRecord(
 ): Promise<MaybeAccount<StatureRecord>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeStatureRecord(maybeAccount));
-}
-
-export function getStatureRecordSize(): number {
-  return 97;
 }

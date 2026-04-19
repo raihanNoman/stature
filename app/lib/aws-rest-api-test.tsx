@@ -1,22 +1,21 @@
 "use client";
 import { address } from "@solana/kit";
-import { AWS_STATURE_API_URL, PostUpdateStatureEventRequest } from "./aws";
+import { POST_UPATE_STATURE_API_URL, PostUpdateStatureEventRequest } from "./aws";
 
 export default function PostUpdateStature_Btn() {
   const onPress = async () => {
     try {
-      console.log("going for it");
-
       const event: PostUpdateStatureEventRequest = {
-        user: address("user ID"),
+        userWallet: address("user ID"),
         program: address("program ID"),
-        source: address("source ID"),
-        amount: BigInt(300),
+        programSourceAccount: address("source ID"),
+        stature: BigInt(300),
+        memo: 'this is uuid or reason for this transaction: Contract between user 1 and user 2 complete ', 
         timestamp: BigInt(new Date().getTime()),
         signature: "signature id",
       };
 
-      const res = await fetch(AWS_STATURE_API_URL + "update-stature", {
+      const res = await fetch(POST_UPATE_STATURE_API_URL,  {
         method: "POST",
         body: JSON.stringify(event),
       });
