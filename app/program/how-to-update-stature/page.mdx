@@ -1,0 +1,84 @@
+# Stature.network: Program Operator Protocol & Guidelines
+
+**Author:** Raihan Noman  
+**Date:** April 19, 2026
+
+---
+
+### Welcome to the Stature.network Ecosystem
+As a **Registered Program Operator**, you are a "Validator of Integrity." Your integration with the Stature protocol directly impacts the global reputation and financial mobility of your users. 
+
+This document outlines the mechanical logic, scope, and responsibilities associated with the `update_user_stature_via_cpi` function.
+
+## 1. Protocol Scope & Philosophy
+Stature.network is an **Economic Reputation Layer**. 
+* **Value-Driven:** Reputation is derived from verifiable economic exchanges (Lamports/Tokens).
+* **Anti-Social:** We do not support "Social Points" or "Likes." Every point of Stature must represent a real-world risk or contribution.
+* **Bi-Directional:** Stature is not "Up-Only." It is a living score that can increase with honor or decrease with default.
+
+---
+
+## 2. The Mathematics of Trust
+When you call `update_user_stature_via_cpi`, the protocol passes the `raw_value` (transaction amount) through a three-pillar algorithm:
+
+### A. Economic Magnitude ($V_log$)
+We use a **Logarithmic Scale** (Binary Log via leading zeros) to process transaction values.
+* **Why:** This prevents "Whales" from buying their way to the top. A $1,000,000 transaction is worth more than $1,000, but it is not 1,000x more valuable in terms of reputation.
+* **Operator Tip:** If your program deals with low-liquidity (e.g., Education/Social Work), we compensate for low $V_log$ by assigning your program a higher **Domain Weight**.
+
+### B. The Pulse Multiplier ($T_c$)
+We measure the **Activity Density** of the user across the entire Stature ecosystem.
+* **Formula:** $Total\ Records / Months\ Since\ First\ Action$.
+* **Impact:** A "Hustler" who interacts consistently every day earns trust faster than a "Ghost" who makes one large transaction and disappears for a year.
+
+### C. Domain Weight ($D_w$)
+The multiplier assigned to your program during registration. 
+* **Low Risk (e.g., Micro-payments):** $1.0x - 2.0x$
+* **High Integrity (e.g., Legal/Insurance):** $5.0x - 10.0x$
+
+---
+
+## 3. Function Logic & Parameters
+
+### `raw_value` (i64)
+* **Positive Values:** Represents successful payments, contributions, or honored agreements.
+* **Negative Values (Slashing):** Represents defaults, broken contracts, or malicious behavior. 
+* **Requirement:** This should be the raw amount in **Lamports** or the smallest unit of your SPL token.
+
+### `memo` (String)
+* You must provide a clear, concise reason for the update (e.g., "Monthly Premium Paid", "Contract #282 Signed", "Loan Default Penalty"). 
+* This is stored on-chain in the `StatureRecord` and serves as the user's permanent audit trail.
+
+---
+
+## 4. Operator Responsibilities
+
+### A. Integrity of Reporting
+You are the "Source of Truth" for the Stature protocol. Reporting "fake" transactions to pump a user's score is a violation of the network's integrity. Stature.network reserves the right to:
+1. **Lower Domain Weights:** If a program is found to have low-quality data.
+2. **Suspend Program:** If malicious "Stature Farming" is detected.
+
+### B. User Transparency
+Users have a right to know why their Stature changed. Ensure your app UI reflects the `raw_value` and `memo` you send to the protocol.
+
+### C. Slashing (Negative Updates)
+Operators are encouraged to use negative `raw_value` updates for defaults. This protects other programs in the ecosystem from high-risk users. **Use this power judiciously.**
+
+---
+
+## 5. Technical Limitations
+* **Overflow Protection:** All math is checked. If a transaction or total exceeds `i64::MAX`, the transaction will fail with an `Overflow` error.
+* **CPI Authority:** Only the specific Program PDA authorized during registration can call the update function for that program ID.
+
+---
+
+> *Note: Stature.network is built on Solana and utilizes AWS Amplify Gen 2 for backend indexing. For technical support, contact the Stature Admin team.*
+
+
+### Summary of our Protocol Architecture
+
+* **Strictly Economic:** Stature is a financial reputation protocol. No "social likes." Every point is backed by a verifiable $i64$ transaction value.
+* **Bi-Directional Honor:** Registered programs have the power to reward ($+$) or slash ($-$) a user's reputation based on real-world performance.
+* **Global Identity:** A user's "Pulse" (activity density) follows them across all programs, making the ecosystem "sticky" and rewarding consistent "Citizens."
+
+
