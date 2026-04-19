@@ -18,3 +18,7 @@ pub use manage_program::*;
 
 pub mod update_stature;
 pub use update_stature::*;
+
+
+pub  mod calculate_stature_gain;
+pub use calculate_stature_gain::*;

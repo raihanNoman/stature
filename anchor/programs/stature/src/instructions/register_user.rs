@@ -29,11 +29,16 @@ pub fn register_user(ctx: Context<RegisterUser>, name: String) -> Result<()> {
     user.wallet = ctx.accounts.owner.key();
     user.name = name;
     user.stature = 0;
-    user.record_idx = 0;
+    user.total_records = 0;
     user.is_suspended = false;
+    user.since = Clock::get()?.unix_timestamp;
     user.bump = ctx.bumps.user;
 
-    msg!("✅ success: initialized user {} by {}", user.name, user.wallet);
+    msg!(
+        "✅ success: initialized user {} by {}",
+        user.name,
+        user.wallet
+    );
 
     Ok(())
 }

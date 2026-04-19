@@ -27,6 +27,8 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -65,13 +67,14 @@ export type RegisteredProgram = {
   approvedBy: Address;
   name: string;
   stature: bigint;
-  totalPositiveRaw: bigint;
-  totalNegativeRaw: bigint;
+  totalPositiveTx: bigint;
+  totalNegativeTx: bigint;
   maxRecordCap: bigint;
   recordCount: bigint;
   weight: number;
   isVerified: boolean;
   isSuspended: boolean;
+  since: bigint;
   bump: number;
 };
 
@@ -80,13 +83,14 @@ export type RegisteredProgramArgs = {
   approvedBy: Address;
   name: string;
   stature: number | bigint;
-  totalPositiveRaw: number | bigint;
-  totalNegativeRaw: number | bigint;
+  totalPositiveTx: number | bigint;
+  totalNegativeTx: number | bigint;
   maxRecordCap: number | bigint;
   recordCount: number | bigint;
   weight: number;
   isVerified: boolean;
   isSuspended: boolean;
+  since: number | bigint;
   bump: number;
 };
 
@@ -99,13 +103,14 @@ export function getRegisteredProgramEncoder(): Encoder<RegisteredProgramArgs> {
       ["approvedBy", getAddressEncoder()],
       ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["stature", getI64Encoder()],
-      ["totalPositiveRaw", getI64Encoder()],
-      ["totalNegativeRaw", getI64Encoder()],
+      ["totalPositiveTx", getI64Encoder()],
+      ["totalNegativeTx", getI64Encoder()],
       ["maxRecordCap", getU64Encoder()],
       ["recordCount", getU64Encoder()],
-      ["weight", getU8Encoder()],
+      ["weight", getU16Encoder()],
       ["isVerified", getBooleanEncoder()],
       ["isSuspended", getBooleanEncoder()],
+      ["since", getI64Encoder()],
       ["bump", getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: REGISTERED_PROGRAM_DISCRIMINATOR }),
@@ -120,13 +125,14 @@ export function getRegisteredProgramDecoder(): Decoder<RegisteredProgram> {
     ["approvedBy", getAddressDecoder()],
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["stature", getI64Decoder()],
-    ["totalPositiveRaw", getI64Decoder()],
-    ["totalNegativeRaw", getI64Decoder()],
+    ["totalPositiveTx", getI64Decoder()],
+    ["totalNegativeTx", getI64Decoder()],
     ["maxRecordCap", getU64Decoder()],
     ["recordCount", getU64Decoder()],
-    ["weight", getU8Decoder()],
+    ["weight", getU16Decoder()],
     ["isVerified", getBooleanDecoder()],
     ["isSuspended", getBooleanDecoder()],
+    ["since", getI64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }

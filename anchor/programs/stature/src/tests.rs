@@ -91,13 +91,13 @@ mod tests {
         authority: &Pubkey, // The target program's key/PDA
         user_wallet: &Pubkey,
         source: &Pubkey,
-        stature: i64,
+        tx_value_lamports: i64,
         memo: String,
     ) -> Instruction {
         let program_pda = get_registered_program_pda(authority);
         let user_pda = get_user_pda(user_wallet);
 
-        let data = crate::instruction::UpdateUserStature { stature, memo }.data();
+        let data = crate::instruction::UpdateUserStature { tx_value_lamports, memo }.data();
         Instruction {
             program_id: PROGRAM_ID,
             accounts: vec![

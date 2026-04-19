@@ -26,17 +26,18 @@ pub struct RegisterProgram<'info> {
 
 /// Admin registers an external Program ID (e.g., Contract282) into the Stature Protocol
 pub fn register_program(ctx: Context<RegisterProgram>, name: String) -> Result<()> {
-    let integration = &mut ctx.accounts.registered_program;
-    integration.program_id = ctx.accounts.target_program.key();
-    integration.name = name;
-    integration.weight = 1; // Default weight
-    integration.is_verified = false;
-    integration.is_suspended = false;
-    integration.bump = ctx.bumps.registered_program;
+    let registered_program = &mut ctx.accounts.registered_program;
+    registered_program.program_id = ctx.accounts.target_program.key();
+    registered_program.name = name;
+    registered_program.weight = 1; // Default weight
+    registered_program.is_verified = false;
+    registered_program.is_suspended = false;
+    registered_program.since = Clock::get()?.unix_timestamp;
+    registered_program.bump = ctx.bumps.registered_program;
 
     msg!(
         "✅ Program {} registered in Stature Protocol",
-        integration.program_id
+        registered_program.program_id
     );
     Ok(())
 }

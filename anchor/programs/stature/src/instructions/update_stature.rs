@@ -1,3 +1,4 @@
+use crate::calculate_stature_gain;
 use crate::constants::{ANCHOR_DISCRIMINATOR};
 use crate::error::ErrorCode;
 use crate::state::{ ProgramUserState, RegisteredProgram, StatureRecord, User};
@@ -72,7 +73,7 @@ pub struct UpdateUserStatureCPI<'info> {
 
 pub fn update_user_stature_via_cpi(
     ctx: Context<UpdateUserStatureCPI>,
-    new_stature: i64,
+    tx_value_lamports: i64,
     memo: String, 
 ) -> Result<()> {
     let now: i64 =  Clock::get()?.unix_timestamp;
@@ -82,6 +83,11 @@ pub fn update_user_stature_via_cpi(
     let record = &mut ctx.accounts.record;
     let program_user_state = &mut ctx.accounts.program_user_state;
 
+ 
+
+    if program_user_state.total_records == 0 {
+        program_user_state.first_action_at = now;
+    }
 
 
     if user.wallet == Pubkey::default() {
@@ -94,69 +100,93 @@ pub fn update_user_stature_via_cpi(
         user.wallet = ctx.accounts.user_wallet.key();
         user.name = name;
         user.stature = 0;
-        user.record_idx = 0;
+        user.total_records = 0;
+        user.since = now;
         user.is_suspended = false;
         user.bump = ctx.bumps.user;
     }
-    
+
+    if user.first_action_at == 0 {
+        user.first_action_at = now;
+    }
+
     // 1. Logic Guards
     require!(!user.is_suspended, ErrorCode::UserSuspended);
 
     // 2. Calculation Logic (Weighted by Program Authority)
-    let weight_multiplier = registered_program.weight as i64;
-    let weighted_stature = new_stature
-        .checked_mul(weight_multiplier)
-        .ok_or(ErrorCode::Overflow)?;
+    // let weight_multiplier = registered_program.weight as i64;
+    // let weighted_stature = tx_value_lamports
+    //     .checked_mul(weight_multiplier)
+    //     .ok_or(ErrorCode::Overflow)?;
 
     // Anti-inflation scaling
-    let value = user.stature.abs() as u64 + 1;
-    let scale = (64 - value.leading_zeros()) as i64;
-    let adjusted_stature = weighted_stature
-        .checked_div(scale.max(1))
-        .ok_or(ErrorCode::Overflow)?;
+    // let value = user.stature.abs() as u64 + 1;
+    // let scale = (64 - value.leading_zeros()) as i64;
+
+
+    // let adjusted_stature = weighted_stature
+    //     .checked_div(scale.max(1))
+    //     .ok_or(ErrorCode::Overflow)?;
+
+    let adjusted_stature = calculate_stature_gain(
+        tx_value_lamports,
+        registered_program.weight,
+        user.total_records,
+        user.first_action_at,
+        now,
+    )?;
 
     // 3. Update State
+
+
+    if tx_value_lamports > 0 {
+        user.total_positive_tx = user.total_positive_tx
+            .checked_add(tx_value_lamports as u64)
+            .ok_or(ErrorCode::Overflow)?; // Convert Option to Result
+
+        registered_program.total_positive_tx = registered_program.total_positive_tx
+            .checked_add(tx_value_lamports)
+            .ok_or(ErrorCode::Overflow)?;
+    } else {
+        let penalty_abs = tx_value_lamports.abs() as u64;
+        
+        user.total_negative_tx = user.total_negative_tx
+            .checked_add(penalty_abs)
+            .ok_or(ErrorCode::Overflow)?;
+
+        registered_program.total_negative_tx = registered_program.total_negative_tx
+            .checked_add(tx_value_lamports.abs())
+            .ok_or(ErrorCode::Overflow)?;
+    }
+
     user.stature = user
         .stature
         .checked_add(adjusted_stature)
         .ok_or(ErrorCode::Overflow)?;
 
-    // Update Integration metrics
-    if new_stature > 0 {
-        registered_program.total_positive_raw = registered_program
-            .total_positive_raw
-            .checked_add(new_stature)
-            .ok_or(ErrorCode::Overflow)?;
-
-    }else {
-        registered_program.total_negative_raw = registered_program
-            .total_negative_raw
-            .checked_add(new_stature.abs())
-            .ok_or(ErrorCode::Overflow)?;
-
-}
-
-        registered_program.stature = registered_program
-            .stature
-            .checked_add(adjusted_stature)
-            .ok_or(ErrorCode::Overflow)?;
+    registered_program.stature = registered_program
+        .stature
+        .checked_add(adjusted_stature)
+        .ok_or(ErrorCode::Overflow)?;
 
     // 4. Record keeping
 
     record.user = user.wallet.key(); 
     record.registered_program = registered_program.key();
     record.registered_program_source_account = source_account.key();
+    record.weight = registered_program.weight;
 
+    record.tx_value = tx_value_lamports; // Store the raw input
     record.stature = adjusted_stature;
     record.memo = memo.clone();
     record.bump = ctx.bumps.record;
-    record.user_record_idx = user.record_idx;
+    record.user_record_idx = user.total_records;
 
     record.timestamp =now;
     program_user_state.last_updated_at = now;
 
 
-    user.record_idx += 1;
+    user.total_records += 1;
 
     registered_program.record_count += 1;
     program_user_state.total_records += 1;

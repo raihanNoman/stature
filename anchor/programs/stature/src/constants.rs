@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 
 // pub const PROGRAM_AUTHOR: &str = "My Personal wallet key";
-pub const MAX_COMPANY_WEIGHT: u8 = 10; // used by admin
+pub const MAX_COMPANY_WEIGHT: u16 = 10; // used by admin
 // pub const MAX_REWARD: i64 = 100;
 // pub const MAX_SLASH: i64 = 20;
 // pub const MAX_USER_STATURE_UPDATES_BY_COMPANY: u64 = 100;

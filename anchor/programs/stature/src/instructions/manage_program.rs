@@ -35,7 +35,7 @@ pub fn manage_program_suspension(ctx: Context<ManageProgram>, is_suspended: bool
     Ok(())
 }
 
-pub fn manage_program_weight(ctx: Context<ManageProgram>, new_weight: u8 ) -> Result<()> { 
+pub fn manage_program_weight(ctx: Context<ManageProgram>, new_weight: u16 ) -> Result<()> { 
     
     require!(new_weight > 0 && new_weight <= MAX_COMPANY_WEIGHT, ErrorCode::InvalidWeight);
 

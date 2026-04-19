@@ -63,7 +63,11 @@ export type User = {
   name: string;
   stature: bigint;
   isSuspended: boolean;
-  recordIdx: bigint;
+  totalRecords: bigint;
+  firstActionAt: bigint;
+  totalPositiveTx: bigint;
+  totalNegativeTx: bigint;
+  since: bigint;
   bump: number;
 };
 
@@ -72,7 +76,11 @@ export type UserArgs = {
   name: string;
   stature: number | bigint;
   isSuspended: boolean;
-  recordIdx: number | bigint;
+  totalRecords: number | bigint;
+  firstActionAt: number | bigint;
+  totalPositiveTx: number | bigint;
+  totalNegativeTx: number | bigint;
+  since: number | bigint;
   bump: number;
 };
 
@@ -85,7 +93,11 @@ export function getUserEncoder(): Encoder<UserArgs> {
       ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["stature", getI64Encoder()],
       ["isSuspended", getBooleanEncoder()],
-      ["recordIdx", getU64Encoder()],
+      ["totalRecords", getU64Encoder()],
+      ["firstActionAt", getI64Encoder()],
+      ["totalPositiveTx", getU64Encoder()],
+      ["totalNegativeTx", getU64Encoder()],
+      ["since", getI64Encoder()],
       ["bump", getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: USER_DISCRIMINATOR }),
@@ -100,7 +112,11 @@ export function getUserDecoder(): Decoder<User> {
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["stature", getI64Decoder()],
     ["isSuspended", getBooleanDecoder()],
-    ["recordIdx", getU64Decoder()],
+    ["totalRecords", getU64Decoder()],
+    ["firstActionAt", getI64Decoder()],
+    ["totalPositiveTx", getU64Decoder()],
+    ["totalNegativeTx", getU64Decoder()],
+    ["since", getI64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }

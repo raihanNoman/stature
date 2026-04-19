@@ -52,12 +52,14 @@ export function getProgramUserStateDiscriminatorBytes() {
 export type ProgramUserState = {
   discriminator: ReadonlyUint8Array;
   lastUpdatedAt: bigint;
+  firstActionAt: bigint;
   totalRecords: bigint;
   bump: number;
 };
 
 export type ProgramUserStateArgs = {
   lastUpdatedAt: number | bigint;
+  firstActionAt: number | bigint;
   totalRecords: number | bigint;
   bump: number;
 };
@@ -68,6 +70,7 @@ export function getProgramUserStateEncoder(): FixedSizeEncoder<ProgramUserStateA
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["lastUpdatedAt", getI64Encoder()],
+      ["firstActionAt", getI64Encoder()],
       ["totalRecords", getU64Encoder()],
       ["bump", getU8Encoder()],
     ]),
@@ -80,6 +83,7 @@ export function getProgramUserStateDecoder(): FixedSizeDecoder<ProgramUserState>
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["lastUpdatedAt", getI64Decoder()],
+    ["firstActionAt", getI64Decoder()],
     ["totalRecords", getU64Decoder()],
     ["bump", getU8Decoder()],
   ]);
@@ -160,5 +164,5 @@ export async function fetchAllMaybeProgramUserState(
 }
 
 export function getProgramUserStateSize(): number {
-  return 25;
+  return 33;
 }

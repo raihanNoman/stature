@@ -62,8 +62,8 @@ export default function VerifyCompanyPage() {
             isSuspended: companyAccount.data.isSuspended,
             recordCount: companyAccount.data.recordCount.toString(),
             stature: companyAccount.data.stature.toString(),
-            totalNegative: companyAccount.data.totalNegativeRaw.toString(),
-            totalPositive: companyAccount.data.totalPositiveRaw.toString(),
+            totalNegative: companyAccount.data.totalNegativeTx.toString(),
+            totalPositive: companyAccount.data.totalPositiveTx.toString(),
             weight: companyAccount.data.weight.toString(),
           });
           if (data) setProgram(data);

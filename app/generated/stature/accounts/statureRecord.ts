@@ -63,6 +63,7 @@ export type StatureRecord = {
   registeredProgramSourceAccount: Address;
   user: Address;
   stature: bigint;
+  txValue: bigint;
   timestamp: bigint;
   memo: string;
   userRecordIdx: bigint;
@@ -74,6 +75,7 @@ export type StatureRecordArgs = {
   registeredProgramSourceAccount: Address;
   user: Address;
   stature: number | bigint;
+  txValue: number | bigint;
   timestamp: number | bigint;
   memo: string;
   userRecordIdx: number | bigint;
@@ -89,6 +91,7 @@ export function getStatureRecordEncoder(): Encoder<StatureRecordArgs> {
       ["registeredProgramSourceAccount", getAddressEncoder()],
       ["user", getAddressEncoder()],
       ["stature", getI64Encoder()],
+      ["txValue", getI64Encoder()],
       ["timestamp", getI64Encoder()],
       ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["userRecordIdx", getU64Encoder()],
@@ -106,6 +109,7 @@ export function getStatureRecordDecoder(): Decoder<StatureRecord> {
     ["registeredProgramSourceAccount", getAddressDecoder()],
     ["user", getAddressDecoder()],
     ["stature", getI64Decoder()],
+    ["txValue", getI64Decoder()],
     ["timestamp", getI64Decoder()],
     ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["userRecordIdx", getU64Decoder()],

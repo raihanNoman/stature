@@ -71,7 +71,7 @@ pub mod stature {
     pub fn update_program_verified_status(ctx: Context<ManageProgram>) -> Result<()> {
         instructions::manage_program::manage_program_verified_status(ctx)
     }
-    pub fn update_program_weight(ctx: Context<ManageProgram>, weight: u8) -> Result<()> {
+    pub fn update_program_weight(ctx: Context<ManageProgram>, weight: u16) -> Result<()> {
         instructions::manage_program::manage_program_weight(ctx, weight)
     }
 
@@ -81,9 +81,9 @@ pub mod stature {
 
     pub fn update_user_stature(
         ctx: Context<UpdateUserStatureCPI>,
-        stature: i64,
+        tx_value_lamports: i64,
         memo: String,
     ) -> Result<()> {
-        instructions::update_stature::update_user_stature_via_cpi(ctx, stature, memo)
+        instructions::update_stature::update_user_stature_via_cpi(ctx, tx_value_lamports, memo)
     }
 }

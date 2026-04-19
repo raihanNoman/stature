@@ -113,12 +113,12 @@ export type UpdateUserStatureInstruction<
 
 export type UpdateUserStatureInstructionData = {
   discriminator: ReadonlyUint8Array;
-  stature: bigint;
+  txValueLamports: bigint;
   memo: string;
 };
 
 export type UpdateUserStatureInstructionDataArgs = {
-  stature: number | bigint;
+  txValueLamports: number | bigint;
   memo: string;
 };
 
@@ -126,7 +126,7 @@ export function getUpdateUserStatureInstructionDataEncoder(): Encoder<UpdateUser
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["stature", getI64Encoder()],
+      ["txValueLamports", getI64Encoder()],
       ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: UPDATE_USER_STATURE_DISCRIMINATOR }),
@@ -136,7 +136,7 @@ export function getUpdateUserStatureInstructionDataEncoder(): Encoder<UpdateUser
 export function getUpdateUserStatureInstructionDataDecoder(): Decoder<UpdateUserStatureInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["stature", getI64Decoder()],
+    ["txValueLamports", getI64Decoder()],
     ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
@@ -175,7 +175,7 @@ export type UpdateUserStatureAsyncInput<
   programUserState?: Address<TAccountProgramUserState>;
   record?: Address<TAccountRecord>;
   systemProgram?: Address<TAccountSystemProgram>;
-  stature: UpdateUserStatureInstructionDataArgs["stature"];
+  txValueLamports: UpdateUserStatureInstructionDataArgs["txValueLamports"];
   memo: UpdateUserStatureInstructionDataArgs["memo"];
 };
 
@@ -335,7 +335,7 @@ export type UpdateUserStatureInput<
   programUserState: Address<TAccountProgramUserState>;
   record: Address<TAccountRecord>;
   systemProgram?: Address<TAccountSystemProgram>;
-  stature: UpdateUserStatureInstructionDataArgs["stature"];
+  txValueLamports: UpdateUserStatureInstructionDataArgs["txValueLamports"];
   memo: UpdateUserStatureInstructionDataArgs["memo"];
 };
 

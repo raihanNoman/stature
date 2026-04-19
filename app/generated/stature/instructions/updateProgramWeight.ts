@@ -14,8 +14,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
+  getU16Decoder,
+  getU16Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -89,7 +89,7 @@ export function getUpdateProgramWeightInstructionDataEncoder(): FixedSizeEncoder
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["weight", getU8Encoder()],
+      ["weight", getU16Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -101,7 +101,7 @@ export function getUpdateProgramWeightInstructionDataEncoder(): FixedSizeEncoder
 export function getUpdateProgramWeightInstructionDataDecoder(): FixedSizeDecoder<UpdateProgramWeightInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["weight", getU8Decoder()],
+    ["weight", getU16Decoder()],
   ]);
 }
 

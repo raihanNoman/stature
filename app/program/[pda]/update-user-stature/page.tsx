@@ -87,7 +87,7 @@ export default async function UpdateUserStature({
 
       const [recordAddress] = await findStatureRecordPda({
         user: userAccount.address,
-        userRecordIdx: userAccount.data.recordIdx,
+        userRecordIdx: userAccount.data.totalRecords,
       });
 
       const [stateAddress] = await findProgramUserStatePda({
@@ -109,7 +109,7 @@ export default async function UpdateUserStature({
       }
 
       const ix = await getUpdateUserStatureInstructionAsync({
-        stature: amount_BigInt,
+        'txValueLamports': amount_BigInt,
         'payer': signer, 
         'userWallet': userAddress, 
         'targetProgram': registeredProgramAccount.address, 
