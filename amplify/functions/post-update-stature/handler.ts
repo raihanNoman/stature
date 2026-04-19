@@ -27,10 +27,10 @@ async function createEntry(event: PostUpdateStatureEventRequest) {
   const timestamp = Number(event.timestamp) * 1000;
 
   const { data, errors } = await client.models.StatureRecord.update({
-    id: event.signature,
+    signature: event.signature,
     userWallet: event.userWallet,
     programPda: event.program,
-    sourcePda: event.programSourceAccount,
+    programSourceAccountPda: event.programSourceAccount,
 
     statureChange: event.stature.toString(),
 
