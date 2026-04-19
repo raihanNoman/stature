@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Zap } from "lucide-react";
 import SearchUtility from "./components/serach";
 import PostUpdateStature_Btn from "./lib/aws-rest-api-test";
+import HowItWorks from "./components/how-it-works";
 
 export default function StatureHome() {
   return (
@@ -19,8 +20,6 @@ export default function StatureHome() {
             </span>
           </div>
         </Link>
-
-        <PostUpdateStature_Btn />
 
         <div className="hidden gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-500 md:flex">
           <a
@@ -81,7 +80,12 @@ export default function StatureHome() {
 
       {/* Content Sections */}
       <main className="flex flex-col items-center px-6 py-20 md:px-12">
-        <section id="logic" className="w-full max-w-6xl">
+        {/* <PostUpdateStature_Btn /> */}
+        <section id="logic">
+          <HowItWorks />
+        </section>
+
+        <section className="w-full max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="rounded-[2.5rem] bg-zinc-100 p-10 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800">
               <span className="text-red-500 font-bold uppercase tracking-widest text-[10px]">
