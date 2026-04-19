@@ -6,7 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./company";
-export * from "./companyUserState";
 export * from "./config";
+export * from "./programUserState";
+export * from "./record";
+export * from "./registeredProgram";
+export * from "./updateUserStatureUser";
 export * from "./user";

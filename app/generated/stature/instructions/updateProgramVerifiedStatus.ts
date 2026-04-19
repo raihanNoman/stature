@@ -14,8 +14,6 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -32,25 +30,30 @@ import {
   type TransactionSigner,
   type WritableAccount,
 } from "@solana/kit";
-import { findConfigPda } from "../pdas";
+import { findConfigPda, findRegisteredProgramPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from "../shared";
 
-export const UPDATE_COMPANY_WEIGHT_DISCRIMINATOR = new Uint8Array([
-  188, 93, 104, 46, 178, 63, 57, 20,
+export const UPDATE_PROGRAM_VERIFIED_STATUS_DISCRIMINATOR = new Uint8Array([
+  209, 244, 28, 238, 244, 64, 88, 21,
 ]);
 
-export function getUpdateCompanyWeightDiscriminatorBytes() {
+export function getUpdateProgramVerifiedStatusDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_COMPANY_WEIGHT_DISCRIMINATOR,
+    UPDATE_PROGRAM_VERIFIED_STATUS_DISCRIMINATOR,
   );
 }
 
-export type UpdateCompanyWeightInstruction<
+export type UpdateProgramVerifiedStatusInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountCompany extends string | AccountMeta<string> = string,
+  TAccountTargetProgram extends string | AccountMeta<string> = string,
+  TAccountRegisteredProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -63,79 +66,81 @@ export type UpdateCompanyWeightInstruction<
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountCompany extends string
-        ? WritableAccount<TAccountCompany>
-        : TAccountCompany,
+      TAccountTargetProgram extends string
+        ? ReadonlyAccount<TAccountTargetProgram>
+        : TAccountTargetProgram,
+      TAccountRegisteredProgram extends string
+        ? WritableAccount<TAccountRegisteredProgram>
+        : TAccountRegisteredProgram,
       ...TRemainingAccounts,
     ]
   >;
 
-export type UpdateCompanyWeightInstructionData = {
+export type UpdateProgramVerifiedStatusInstructionData = {
   discriminator: ReadonlyUint8Array;
-  newWeight: number;
 };
 
-export type UpdateCompanyWeightInstructionDataArgs = { newWeight: number };
+export type UpdateProgramVerifiedStatusInstructionDataArgs = {};
 
-export function getUpdateCompanyWeightInstructionDataEncoder(): FixedSizeEncoder<UpdateCompanyWeightInstructionDataArgs> {
+export function getUpdateProgramVerifiedStatusInstructionDataEncoder(): FixedSizeEncoder<UpdateProgramVerifiedStatusInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["newWeight", getU8Encoder()],
-    ]),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_COMPANY_WEIGHT_DISCRIMINATOR,
+      discriminator: UPDATE_PROGRAM_VERIFIED_STATUS_DISCRIMINATOR,
     }),
   );
 }
 
-export function getUpdateCompanyWeightInstructionDataDecoder(): FixedSizeDecoder<UpdateCompanyWeightInstructionData> {
+export function getUpdateProgramVerifiedStatusInstructionDataDecoder(): FixedSizeDecoder<UpdateProgramVerifiedStatusInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["newWeight", getU8Decoder()],
   ]);
 }
 
-export function getUpdateCompanyWeightInstructionDataCodec(): FixedSizeCodec<
-  UpdateCompanyWeightInstructionDataArgs,
-  UpdateCompanyWeightInstructionData
+export function getUpdateProgramVerifiedStatusInstructionDataCodec(): FixedSizeCodec<
+  UpdateProgramVerifiedStatusInstructionDataArgs,
+  UpdateProgramVerifiedStatusInstructionData
 > {
   return combineCodec(
-    getUpdateCompanyWeightInstructionDataEncoder(),
-    getUpdateCompanyWeightInstructionDataDecoder(),
+    getUpdateProgramVerifiedStatusInstructionDataEncoder(),
+    getUpdateProgramVerifiedStatusInstructionDataDecoder(),
   );
 }
 
-export type UpdateCompanyWeightAsyncInput<
+export type UpdateProgramVerifiedStatusAsyncInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
-  TAccountCompany extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  company: Address<TAccountCompany>;
-  newWeight: UpdateCompanyWeightInstructionDataArgs["newWeight"];
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram?: Address<TAccountRegisteredProgram>;
 };
 
-export async function getUpdateCompanyWeightInstructionAsync<
+export async function getUpdateProgramVerifiedStatusInstructionAsync<
   TAccountAdmin extends string,
   TAccountConfig extends string,
-  TAccountCompany extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateCompanyWeightAsyncInput<
+  input: UpdateProgramVerifiedStatusAsyncInput<
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  UpdateCompanyWeightInstruction<
+  UpdateProgramVerifiedStatusInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >
 > {
   // Program address.
@@ -145,19 +150,25 @@ export async function getUpdateCompanyWeightInstructionAsync<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
-    company: { value: input.company ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.config.value) {
     accounts.config.value = await findConfigPda();
+  }
+  if (!accounts.registeredProgram.value) {
+    accounts.registeredProgram.value = await findRegisteredProgramPda({
+      targetProgram: expectAddress(accounts.targetProgram.value),
+    });
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
@@ -165,48 +176,52 @@ export async function getUpdateCompanyWeightInstructionAsync<
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
     ],
-    data: getUpdateCompanyWeightInstructionDataEncoder().encode(
-      args as UpdateCompanyWeightInstructionDataArgs,
-    ),
+    data: getUpdateProgramVerifiedStatusInstructionDataEncoder().encode({}),
     programAddress,
-  } as UpdateCompanyWeightInstruction<
+  } as UpdateProgramVerifiedStatusInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >);
 }
 
-export type UpdateCompanyWeightInput<
+export type UpdateProgramVerifiedStatusInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
-  TAccountCompany extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  company: Address<TAccountCompany>;
-  newWeight: UpdateCompanyWeightInstructionDataArgs["newWeight"];
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram: Address<TAccountRegisteredProgram>;
 };
 
-export function getUpdateCompanyWeightInstruction<
+export function getUpdateProgramVerifiedStatusInstruction<
   TAccountAdmin extends string,
   TAccountConfig extends string,
-  TAccountCompany extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateCompanyWeightInput<
+  input: UpdateProgramVerifiedStatusInput<
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateCompanyWeightInstruction<
+): UpdateProgramVerifiedStatusInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountConfig,
-  TAccountCompany
+  TAccountTargetProgram,
+  TAccountRegisteredProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? STATURE_PROGRAM_ADDRESS;
@@ -215,36 +230,37 @@ export function getUpdateCompanyWeightInstruction<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
-    company: { value: input.company ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
     ],
-    data: getUpdateCompanyWeightInstructionDataEncoder().encode(
-      args as UpdateCompanyWeightInstructionDataArgs,
-    ),
+    data: getUpdateProgramVerifiedStatusInstructionDataEncoder().encode({}),
     programAddress,
-  } as UpdateCompanyWeightInstruction<
+  } as UpdateProgramVerifiedStatusInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >);
 }
 
-export type ParsedUpdateCompanyWeightInstruction<
+export type ParsedUpdateProgramVerifiedStatusInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -252,20 +268,21 @@ export type ParsedUpdateCompanyWeightInstruction<
   accounts: {
     admin: TAccountMetas[0];
     config: TAccountMetas[1];
-    company: TAccountMetas[2];
+    targetProgram: TAccountMetas[2];
+    registeredProgram: TAccountMetas[3];
   };
-  data: UpdateCompanyWeightInstructionData;
+  data: UpdateProgramVerifiedStatusInstructionData;
 };
 
-export function parseUpdateCompanyWeightInstruction<
+export function parseUpdateProgramVerifiedStatusInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateCompanyWeightInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedUpdateProgramVerifiedStatusInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -280,9 +297,10 @@ export function parseUpdateCompanyWeightInstruction<
     accounts: {
       admin: getNextAccount(),
       config: getNextAccount(),
-      company: getNextAccount(),
+      targetProgram: getNextAccount(),
+      registeredProgram: getNextAccount(),
     },
-    data: getUpdateCompanyWeightInstructionDataDecoder().decode(
+    data: getUpdateProgramVerifiedStatusInstructionDataDecoder().decode(
       instruction.data,
     ),
   };

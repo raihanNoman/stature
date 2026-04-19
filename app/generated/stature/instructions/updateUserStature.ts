@@ -34,7 +34,12 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findCompanyUserStatePda } from "../pdas";
+import {
+  findProgramUserStatePda,
+  findRecordPda,
+  findRegisteredProgramPda,
+  findUpdateUserStatureUserPda,
+} from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
@@ -54,10 +59,14 @@ export function getUpdateUserStatureDiscriminatorBytes() {
 
 export type UpdateUserStatureInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountCompanyRep extends string | AccountMeta<string> = string,
-  TAccountCompany extends string | AccountMeta<string> = string,
+  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountTargetProgram extends string | AccountMeta<string> = string,
+  TAccountRegisteredProgram extends string | AccountMeta<string> = string,
+  TAccountUserWallet extends string | AccountMeta<string> = string,
   TAccountUser extends string | AccountMeta<string> = string,
-  TAccountCompanyUserState extends string | AccountMeta<string> = string,
+  TAccountRegisteredProgramSourceAccount extends string | AccountMeta<string> =
+    string,
+  TAccountProgramUserState extends string | AccountMeta<string> = string,
   TAccountRecord extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
@@ -66,19 +75,28 @@ export type UpdateUserStatureInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountCompanyRep extends string
-        ? WritableSignerAccount<TAccountCompanyRep> &
-            AccountSignerMeta<TAccountCompanyRep>
-        : TAccountCompanyRep,
-      TAccountCompany extends string
-        ? WritableAccount<TAccountCompany>
-        : TAccountCompany,
+      TAccountPayer extends string
+        ? WritableSignerAccount<TAccountPayer> &
+            AccountSignerMeta<TAccountPayer>
+        : TAccountPayer,
+      TAccountTargetProgram extends string
+        ? ReadonlyAccount<TAccountTargetProgram>
+        : TAccountTargetProgram,
+      TAccountRegisteredProgram extends string
+        ? WritableAccount<TAccountRegisteredProgram>
+        : TAccountRegisteredProgram,
+      TAccountUserWallet extends string
+        ? ReadonlyAccount<TAccountUserWallet>
+        : TAccountUserWallet,
       TAccountUser extends string
         ? WritableAccount<TAccountUser>
         : TAccountUser,
-      TAccountCompanyUserState extends string
-        ? WritableAccount<TAccountCompanyUserState>
-        : TAccountCompanyUserState,
+      TAccountRegisteredProgramSourceAccount extends string
+        ? WritableAccount<TAccountRegisteredProgramSourceAccount>
+        : TAccountRegisteredProgramSourceAccount,
+      TAccountProgramUserState extends string
+        ? WritableAccount<TAccountProgramUserState>
+        : TAccountProgramUserState,
       TAccountRecord extends string
         ? WritableAccount<TAccountRecord>
         : TAccountRecord,
@@ -130,37 +148,53 @@ export function getUpdateUserStatureInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type UpdateUserStatureAsyncInput<
-  TAccountCompanyRep extends string = string,
-  TAccountCompany extends string = string,
+  TAccountPayer extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
+  TAccountUserWallet extends string = string,
   TAccountUser extends string = string,
-  TAccountCompanyUserState extends string = string,
+  TAccountRegisteredProgramSourceAccount extends string = string,
+  TAccountProgramUserState extends string = string,
   TAccountRecord extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  companyRep: TransactionSigner<TAccountCompanyRep>;
-  company: Address<TAccountCompany>;
-  user: Address<TAccountUser>;
-  companyUserState?: Address<TAccountCompanyUserState>;
-  record: Address<TAccountRecord>;
+  /**
+   * The program calling this MUST sign/authorize via its PDA or specific key
+   * In a Program-to-Program model, this is usually a PDA from the calling program
+   */
+  payer: TransactionSigner<TAccountPayer>;
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram?: Address<TAccountRegisteredProgram>;
+  userWallet: Address<TAccountUserWallet>;
+  user?: Address<TAccountUser>;
+  registeredProgramSourceAccount: Address<TAccountRegisteredProgramSourceAccount>;
+  programUserState?: Address<TAccountProgramUserState>;
+  record?: Address<TAccountRecord>;
   systemProgram?: Address<TAccountSystemProgram>;
   amount: UpdateUserStatureInstructionDataArgs["amount"];
   nonce: UpdateUserStatureInstructionDataArgs["nonce"];
 };
 
 export async function getUpdateUserStatureInstructionAsync<
-  TAccountCompanyRep extends string,
-  TAccountCompany extends string,
+  TAccountPayer extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
+  TAccountUserWallet extends string,
   TAccountUser extends string,
-  TAccountCompanyUserState extends string,
+  TAccountRegisteredProgramSourceAccount extends string,
+  TAccountProgramUserState extends string,
   TAccountRecord extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
   input: UpdateUserStatureAsyncInput<
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
+    TAccountUserWallet,
     TAccountUser,
-    TAccountCompanyUserState,
+    TAccountRegisteredProgramSourceAccount,
+    TAccountProgramUserState,
     TAccountRecord,
     TAccountSystemProgram
   >,
@@ -168,10 +202,13 @@ export async function getUpdateUserStatureInstructionAsync<
 ): Promise<
   UpdateUserStatureInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
+    TAccountUserWallet,
     TAccountUser,
-    TAccountCompanyUserState,
+    TAccountRegisteredProgramSourceAccount,
+    TAccountProgramUserState,
     TAccountRecord,
     TAccountSystemProgram
   >
@@ -181,11 +218,20 @@ export async function getUpdateUserStatureInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    companyRep: { value: input.companyRep ?? null, isWritable: true },
-    company: { value: input.company ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
+    userWallet: { value: input.userWallet ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: true },
-    companyUserState: {
-      value: input.companyUserState ?? null,
+    registeredProgramSourceAccount: {
+      value: input.registeredProgramSourceAccount ?? null,
+      isWritable: true,
+    },
+    programUserState: {
+      value: input.programUserState ?? null,
       isWritable: true,
     },
     record: { value: input.record ?? null, isWritable: true },
@@ -200,10 +246,29 @@ export async function getUpdateUserStatureInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.companyUserState.value) {
-    accounts.companyUserState.value = await findCompanyUserStatePda({
-      company: expectAddress(accounts.company.value),
-      user: expectAddress(accounts.user.value),
+  if (!accounts.registeredProgram.value) {
+    accounts.registeredProgram.value = await findRegisteredProgramPda({
+      targetProgram: expectAddress(accounts.targetProgram.value),
+    });
+  }
+  if (!accounts.user.value) {
+    accounts.user.value = await findUpdateUserStatureUserPda({
+      userWallet: expectAddress(accounts.userWallet.value),
+    });
+  }
+  if (!accounts.programUserState.value) {
+    accounts.programUserState.value = await findProgramUserStatePda({
+      registeredProgram: expectAddress(accounts.registeredProgram.value),
+      userWallet: expectAddress(accounts.userWallet.value),
+    });
+  }
+  if (!accounts.record.value) {
+    accounts.record.value = await findRecordPda({
+      userWallet: expectAddress(accounts.userWallet.value),
+      registeredProgram: expectAddress(accounts.registeredProgram.value),
+      registeredProgramSourceAccount: expectAddress(
+        accounts.registeredProgramSourceAccount.value,
+      ),
     });
   }
   if (!accounts.systemProgram.value) {
@@ -214,10 +279,13 @@ export async function getUpdateUserStatureInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.companyRep),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
+      getAccountMeta(accounts.userWallet),
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.companyUserState),
+      getAccountMeta(accounts.registeredProgramSourceAccount),
+      getAccountMeta(accounts.programUserState),
       getAccountMeta(accounts.record),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -227,27 +295,40 @@ export async function getUpdateUserStatureInstructionAsync<
     programAddress,
   } as UpdateUserStatureInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
+    TAccountUserWallet,
     TAccountUser,
-    TAccountCompanyUserState,
+    TAccountRegisteredProgramSourceAccount,
+    TAccountProgramUserState,
     TAccountRecord,
     TAccountSystemProgram
   >);
 }
 
 export type UpdateUserStatureInput<
-  TAccountCompanyRep extends string = string,
-  TAccountCompany extends string = string,
+  TAccountPayer extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
+  TAccountUserWallet extends string = string,
   TAccountUser extends string = string,
-  TAccountCompanyUserState extends string = string,
+  TAccountRegisteredProgramSourceAccount extends string = string,
+  TAccountProgramUserState extends string = string,
   TAccountRecord extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  companyRep: TransactionSigner<TAccountCompanyRep>;
-  company: Address<TAccountCompany>;
+  /**
+   * The program calling this MUST sign/authorize via its PDA or specific key
+   * In a Program-to-Program model, this is usually a PDA from the calling program
+   */
+  payer: TransactionSigner<TAccountPayer>;
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram: Address<TAccountRegisteredProgram>;
+  userWallet: Address<TAccountUserWallet>;
   user: Address<TAccountUser>;
-  companyUserState: Address<TAccountCompanyUserState>;
+  registeredProgramSourceAccount: Address<TAccountRegisteredProgramSourceAccount>;
+  programUserState: Address<TAccountProgramUserState>;
   record: Address<TAccountRecord>;
   systemProgram?: Address<TAccountSystemProgram>;
   amount: UpdateUserStatureInstructionDataArgs["amount"];
@@ -255,29 +336,38 @@ export type UpdateUserStatureInput<
 };
 
 export function getUpdateUserStatureInstruction<
-  TAccountCompanyRep extends string,
-  TAccountCompany extends string,
+  TAccountPayer extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
+  TAccountUserWallet extends string,
   TAccountUser extends string,
-  TAccountCompanyUserState extends string,
+  TAccountRegisteredProgramSourceAccount extends string,
+  TAccountProgramUserState extends string,
   TAccountRecord extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
   input: UpdateUserStatureInput<
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
+    TAccountUserWallet,
     TAccountUser,
-    TAccountCompanyUserState,
+    TAccountRegisteredProgramSourceAccount,
+    TAccountProgramUserState,
     TAccountRecord,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): UpdateUserStatureInstruction<
   TProgramAddress,
-  TAccountCompanyRep,
-  TAccountCompany,
+  TAccountPayer,
+  TAccountTargetProgram,
+  TAccountRegisteredProgram,
+  TAccountUserWallet,
   TAccountUser,
-  TAccountCompanyUserState,
+  TAccountRegisteredProgramSourceAccount,
+  TAccountProgramUserState,
   TAccountRecord,
   TAccountSystemProgram
 > {
@@ -286,11 +376,20 @@ export function getUpdateUserStatureInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    companyRep: { value: input.companyRep ?? null, isWritable: true },
-    company: { value: input.company ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
+    userWallet: { value: input.userWallet ?? null, isWritable: false },
     user: { value: input.user ?? null, isWritable: true },
-    companyUserState: {
-      value: input.companyUserState ?? null,
+    registeredProgramSourceAccount: {
+      value: input.registeredProgramSourceAccount ?? null,
+      isWritable: true,
+    },
+    programUserState: {
+      value: input.programUserState ?? null,
       isWritable: true,
     },
     record: { value: input.record ?? null, isWritable: true },
@@ -313,10 +412,13 @@ export function getUpdateUserStatureInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.companyRep),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
+      getAccountMeta(accounts.userWallet),
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.companyUserState),
+      getAccountMeta(accounts.registeredProgramSourceAccount),
+      getAccountMeta(accounts.programUserState),
       getAccountMeta(accounts.record),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -326,10 +428,13 @@ export function getUpdateUserStatureInstruction<
     programAddress,
   } as UpdateUserStatureInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
+    TAccountUserWallet,
     TAccountUser,
-    TAccountCompanyUserState,
+    TAccountRegisteredProgramSourceAccount,
+    TAccountProgramUserState,
     TAccountRecord,
     TAccountSystemProgram
   >);
@@ -341,12 +446,19 @@ export type ParsedUpdateUserStatureInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    companyRep: TAccountMetas[0];
-    company: TAccountMetas[1];
-    user: TAccountMetas[2];
-    companyUserState: TAccountMetas[3];
-    record: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
+    /**
+     * The program calling this MUST sign/authorize via its PDA or specific key
+     * In a Program-to-Program model, this is usually a PDA from the calling program
+     */
+    payer: TAccountMetas[0];
+    targetProgram: TAccountMetas[1];
+    registeredProgram: TAccountMetas[2];
+    userWallet: TAccountMetas[3];
+    user: TAccountMetas[4];
+    registeredProgramSourceAccount: TAccountMetas[5];
+    programUserState: TAccountMetas[6];
+    record: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
   data: UpdateUserStatureInstructionData;
 };
@@ -359,7 +471,7 @@ export function parseUpdateUserStatureInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateUserStatureInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -372,10 +484,13 @@ export function parseUpdateUserStatureInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      companyRep: getNextAccount(),
-      company: getNextAccount(),
+      payer: getNextAccount(),
+      targetProgram: getNextAccount(),
+      registeredProgram: getNextAccount(),
+      userWallet: getNextAccount(),
       user: getNextAccount(),
-      companyUserState: getNextAccount(),
+      registeredProgramSourceAccount: getNextAccount(),
+      programUserState: getNextAccount(),
       record: getNextAccount(),
       systemProgram: getNextAccount(),
     },

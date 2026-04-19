@@ -36,7 +36,7 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findUserPda } from "../pdas";
+import { findRegisteredProgramPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
@@ -44,20 +44,21 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const INITIALIZE_USER_DISCRIMINATOR = new Uint8Array([
-  111, 17, 185, 250, 60, 122, 38, 254,
+export const CREATE_PROGRAM_DISCRIMINATOR = new Uint8Array([
+  62, 207, 180, 162, 90, 59, 148, 148,
 ]);
 
-export function getInitializeUserDiscriminatorBytes() {
+export function getCreateProgramDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_USER_DISCRIMINATOR,
+    CREATE_PROGRAM_DISCRIMINATOR,
   );
 }
 
-export type InitializeUserInstruction<
+export type CreateProgramInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountOwner extends string | AccountMeta<string> = string,
-  TAccountUser extends string | AccountMeta<string> = string,
+  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountTargetProgram extends string | AccountMeta<string> = string,
+  TAccountRegisteredProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -65,13 +66,16 @@ export type InitializeUserInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner> &
-            AccountSignerMeta<TAccountOwner>
-        : TAccountOwner,
-      TAccountUser extends string
-        ? WritableAccount<TAccountUser>
-        : TAccountUser,
+      TAccountPayer extends string
+        ? WritableSignerAccount<TAccountPayer> &
+            AccountSignerMeta<TAccountPayer>
+        : TAccountPayer,
+      TAccountTargetProgram extends string
+        ? ReadonlyAccount<TAccountTargetProgram>
+        : TAccountTargetProgram,
+      TAccountRegisteredProgram extends string
+        ? WritableAccount<TAccountRegisteredProgram>
+        : TAccountRegisteredProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -79,68 +83,74 @@ export type InitializeUserInstruction<
     ]
   >;
 
-export type InitializeUserInstructionData = {
+export type CreateProgramInstructionData = {
   discriminator: ReadonlyUint8Array;
   name: string;
 };
 
-export type InitializeUserInstructionDataArgs = { name: string };
+export type CreateProgramInstructionDataArgs = { name: string };
 
-export function getInitializeUserInstructionDataEncoder(): Encoder<InitializeUserInstructionDataArgs> {
+export function getCreateProgramInstructionDataEncoder(): Encoder<CreateProgramInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_USER_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CREATE_PROGRAM_DISCRIMINATOR }),
   );
 }
 
-export function getInitializeUserInstructionDataDecoder(): Decoder<InitializeUserInstructionData> {
+export function getCreateProgramInstructionDataDecoder(): Decoder<CreateProgramInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getInitializeUserInstructionDataCodec(): Codec<
-  InitializeUserInstructionDataArgs,
-  InitializeUserInstructionData
+export function getCreateProgramInstructionDataCodec(): Codec<
+  CreateProgramInstructionDataArgs,
+  CreateProgramInstructionData
 > {
   return combineCodec(
-    getInitializeUserInstructionDataEncoder(),
-    getInitializeUserInstructionDataDecoder(),
+    getCreateProgramInstructionDataEncoder(),
+    getCreateProgramInstructionDataDecoder(),
   );
 }
 
-export type InitializeUserAsyncInput<
-  TAccountOwner extends string = string,
-  TAccountUser extends string = string,
+export type CreateProgramAsyncInput<
+  TAccountPayer extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  owner: TransactionSigner<TAccountOwner>;
-  user?: Address<TAccountUser>;
+  payer: TransactionSigner<TAccountPayer>;
+  /** The Program ID you are whitelisting */
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram?: Address<TAccountRegisteredProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  name: InitializeUserInstructionDataArgs["name"];
+  name: CreateProgramInstructionDataArgs["name"];
 };
 
-export async function getInitializeUserInstructionAsync<
-  TAccountOwner extends string,
-  TAccountUser extends string,
+export async function getCreateProgramInstructionAsync<
+  TAccountPayer extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeUserAsyncInput<
-    TAccountOwner,
-    TAccountUser,
+  input: CreateProgramAsyncInput<
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  InitializeUserInstruction<
+  CreateProgramInstruction<
     TProgramAddress,
-    TAccountOwner,
-    TAccountUser,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
     TAccountSystemProgram
   >
 > {
@@ -149,8 +159,12 @@ export async function getInitializeUserInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
-    user: { value: input.user ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -162,9 +176,9 @@ export async function getInitializeUserInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.user.value) {
-    accounts.user.value = await findUserPda({
-      owner: expectAddress(accounts.owner.value),
+  if (!accounts.registeredProgram.value) {
+    accounts.registeredProgram.value = await findRegisteredProgramPda({
+      targetProgram: expectAddress(accounts.targetProgram.value),
     });
   }
   if (!accounts.systemProgram.value) {
@@ -175,49 +189,57 @@ export async function getInitializeUserInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.owner),
-      getAccountMeta(accounts.user),
+      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeUserInstructionDataEncoder().encode(
-      args as InitializeUserInstructionDataArgs,
+    data: getCreateProgramInstructionDataEncoder().encode(
+      args as CreateProgramInstructionDataArgs,
     ),
     programAddress,
-  } as InitializeUserInstruction<
+  } as CreateProgramInstruction<
     TProgramAddress,
-    TAccountOwner,
-    TAccountUser,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
     TAccountSystemProgram
   >);
 }
 
-export type InitializeUserInput<
-  TAccountOwner extends string = string,
-  TAccountUser extends string = string,
+export type CreateProgramInput<
+  TAccountPayer extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  owner: TransactionSigner<TAccountOwner>;
-  user: Address<TAccountUser>;
+  payer: TransactionSigner<TAccountPayer>;
+  /** The Program ID you are whitelisting */
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram: Address<TAccountRegisteredProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  name: InitializeUserInstructionDataArgs["name"];
+  name: CreateProgramInstructionDataArgs["name"];
 };
 
-export function getInitializeUserInstruction<
-  TAccountOwner extends string,
-  TAccountUser extends string,
+export function getCreateProgramInstruction<
+  TAccountPayer extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeUserInput<
-    TAccountOwner,
-    TAccountUser,
+  input: CreateProgramInput<
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): InitializeUserInstruction<
+): CreateProgramInstruction<
   TProgramAddress,
-  TAccountOwner,
-  TAccountUser,
+  TAccountPayer,
+  TAccountTargetProgram,
+  TAccountRegisteredProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -225,8 +247,12 @@ export function getInitializeUserInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
-    user: { value: input.user ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -246,44 +272,48 @@ export function getInitializeUserInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.owner),
-      getAccountMeta(accounts.user),
+      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeUserInstructionDataEncoder().encode(
-      args as InitializeUserInstructionDataArgs,
+    data: getCreateProgramInstructionDataEncoder().encode(
+      args as CreateProgramInstructionDataArgs,
     ),
     programAddress,
-  } as InitializeUserInstruction<
+  } as CreateProgramInstruction<
     TProgramAddress,
-    TAccountOwner,
-    TAccountUser,
+    TAccountPayer,
+    TAccountTargetProgram,
+    TAccountRegisteredProgram,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedInitializeUserInstruction<
+export type ParsedCreateProgramInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    owner: TAccountMetas[0];
-    user: TAccountMetas[1];
-    systemProgram: TAccountMetas[2];
+    payer: TAccountMetas[0];
+    /** The Program ID you are whitelisting */
+    targetProgram: TAccountMetas[1];
+    registeredProgram: TAccountMetas[2];
+    systemProgram: TAccountMetas[3];
   };
-  data: InitializeUserInstructionData;
+  data: CreateProgramInstructionData;
 };
 
-export function parseInitializeUserInstruction<
+export function parseCreateProgramInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedInitializeUserInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedCreateProgramInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -296,10 +326,11 @@ export function parseInitializeUserInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      owner: getNextAccount(),
-      user: getNextAccount(),
+      payer: getNextAccount(),
+      targetProgram: getNextAccount(),
+      registeredProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getInitializeUserInstructionDataDecoder().decode(instruction.data),
+    data: getCreateProgramInstructionDataDecoder().decode(instruction.data),
   };
 }

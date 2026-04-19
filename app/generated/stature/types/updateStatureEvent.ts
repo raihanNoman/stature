@@ -20,41 +20,48 @@ import {
   type FixedSizeEncoder,
 } from "@solana/kit";
 
-export type UpdateUserEvent = {
+export type UpdateStatureEvent = {
   user: Address;
-  company: Address;
+  program: Address;
+  source: Address;
   amount: bigint;
   timestamp: bigint;
 };
 
-export type UpdateUserEventArgs = {
+export type UpdateStatureEventArgs = {
   user: Address;
-  company: Address;
+  program: Address;
+  source: Address;
   amount: number | bigint;
   timestamp: number | bigint;
 };
 
-export function getUpdateUserEventEncoder(): FixedSizeEncoder<UpdateUserEventArgs> {
+export function getUpdateStatureEventEncoder(): FixedSizeEncoder<UpdateStatureEventArgs> {
   return getStructEncoder([
     ["user", getAddressEncoder()],
-    ["company", getAddressEncoder()],
+    ["program", getAddressEncoder()],
+    ["source", getAddressEncoder()],
     ["amount", getI64Encoder()],
     ["timestamp", getI64Encoder()],
   ]);
 }
 
-export function getUpdateUserEventDecoder(): FixedSizeDecoder<UpdateUserEvent> {
+export function getUpdateStatureEventDecoder(): FixedSizeDecoder<UpdateStatureEvent> {
   return getStructDecoder([
     ["user", getAddressDecoder()],
-    ["company", getAddressDecoder()],
+    ["program", getAddressDecoder()],
+    ["source", getAddressDecoder()],
     ["amount", getI64Decoder()],
     ["timestamp", getI64Decoder()],
   ]);
 }
 
-export function getUpdateUserEventCodec(): FixedSizeCodec<
-  UpdateUserEventArgs,
-  UpdateUserEvent
+export function getUpdateStatureEventCodec(): FixedSizeCodec<
+  UpdateStatureEventArgs,
+  UpdateStatureEvent
 > {
-  return combineCodec(getUpdateUserEventEncoder(), getUpdateUserEventDecoder());
+  return combineCodec(
+    getUpdateStatureEventEncoder(),
+    getUpdateStatureEventDecoder(),
+  );
 }

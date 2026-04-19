@@ -49,140 +49,158 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 
-export const COMPANY_DISCRIMINATOR = new Uint8Array([
-  32, 212, 52, 137, 90, 7, 206, 183,
+export const REGISTERED_PROGRAM_DISCRIMINATOR = new Uint8Array([
+  31, 251, 180, 235, 3, 116, 50, 4,
 ]);
 
-export function getCompanyDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(COMPANY_DISCRIMINATOR);
-}
-
-export type Company = {
-  discriminator: ReadonlyUint8Array;
-  admin: Address;
-  companyRep: Address;
-  name: string;
-  stature: bigint;
-  maxRecordCap: bigint;
-  recordCount: bigint;
-  totalPositiveRaw: bigint;
-  totalNegativeRaw: bigint;
-  isVerified: boolean;
-  isSuspended: boolean;
-  weight: number;
-  bump: number;
-};
-
-export type CompanyArgs = {
-  admin: Address;
-  companyRep: Address;
-  name: string;
-  stature: number | bigint;
-  maxRecordCap: number | bigint;
-  recordCount: number | bigint;
-  totalPositiveRaw: number | bigint;
-  totalNegativeRaw: number | bigint;
-  isVerified: boolean;
-  isSuspended: boolean;
-  weight: number;
-  bump: number;
-};
-
-/** Gets the encoder for {@link CompanyArgs} account data. */
-export function getCompanyEncoder(): Encoder<CompanyArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["admin", getAddressEncoder()],
-      ["companyRep", getAddressEncoder()],
-      ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ["stature", getI64Encoder()],
-      ["maxRecordCap", getU64Encoder()],
-      ["recordCount", getU64Encoder()],
-      ["totalPositiveRaw", getI64Encoder()],
-      ["totalNegativeRaw", getI64Encoder()],
-      ["isVerified", getBooleanEncoder()],
-      ["isSuspended", getBooleanEncoder()],
-      ["weight", getU8Encoder()],
-      ["bump", getU8Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: COMPANY_DISCRIMINATOR }),
+export function getRegisteredProgramDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    REGISTERED_PROGRAM_DISCRIMINATOR,
   );
 }
 
-/** Gets the decoder for {@link Company} account data. */
-export function getCompanyDecoder(): Decoder<Company> {
+export type RegisteredProgram = {
+  discriminator: ReadonlyUint8Array;
+  programId: Address;
+  approvedBy: Address;
+  name: string;
+  stature: bigint;
+  totalPositiveRaw: bigint;
+  totalNegativeRaw: bigint;
+  maxRecordCap: bigint;
+  recordCount: bigint;
+  weight: number;
+  isVerified: boolean;
+  isSuspended: boolean;
+  bump: number;
+};
+
+export type RegisteredProgramArgs = {
+  programId: Address;
+  approvedBy: Address;
+  name: string;
+  stature: number | bigint;
+  totalPositiveRaw: number | bigint;
+  totalNegativeRaw: number | bigint;
+  maxRecordCap: number | bigint;
+  recordCount: number | bigint;
+  weight: number;
+  isVerified: boolean;
+  isSuspended: boolean;
+  bump: number;
+};
+
+/** Gets the encoder for {@link RegisteredProgramArgs} account data. */
+export function getRegisteredProgramEncoder(): Encoder<RegisteredProgramArgs> {
+  return transformEncoder(
+    getStructEncoder([
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["programId", getAddressEncoder()],
+      ["approvedBy", getAddressEncoder()],
+      ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+      ["stature", getI64Encoder()],
+      ["totalPositiveRaw", getI64Encoder()],
+      ["totalNegativeRaw", getI64Encoder()],
+      ["maxRecordCap", getU64Encoder()],
+      ["recordCount", getU64Encoder()],
+      ["weight", getU8Encoder()],
+      ["isVerified", getBooleanEncoder()],
+      ["isSuspended", getBooleanEncoder()],
+      ["bump", getU8Encoder()],
+    ]),
+    (value) => ({ ...value, discriminator: REGISTERED_PROGRAM_DISCRIMINATOR }),
+  );
+}
+
+/** Gets the decoder for {@link RegisteredProgram} account data. */
+export function getRegisteredProgramDecoder(): Decoder<RegisteredProgram> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["admin", getAddressDecoder()],
-    ["companyRep", getAddressDecoder()],
+    ["programId", getAddressDecoder()],
+    ["approvedBy", getAddressDecoder()],
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["stature", getI64Decoder()],
-    ["maxRecordCap", getU64Decoder()],
-    ["recordCount", getU64Decoder()],
     ["totalPositiveRaw", getI64Decoder()],
     ["totalNegativeRaw", getI64Decoder()],
+    ["maxRecordCap", getU64Decoder()],
+    ["recordCount", getU64Decoder()],
+    ["weight", getU8Decoder()],
     ["isVerified", getBooleanDecoder()],
     ["isSuspended", getBooleanDecoder()],
-    ["weight", getU8Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }
 
-/** Gets the codec for {@link Company} account data. */
-export function getCompanyCodec(): Codec<CompanyArgs, Company> {
-  return combineCodec(getCompanyEncoder(), getCompanyDecoder());
-}
-
-export function decodeCompany<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
-): Account<Company, TAddress>;
-export function decodeCompany<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
-): MaybeAccount<Company, TAddress>;
-export function decodeCompany<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
-): Account<Company, TAddress> | MaybeAccount<Company, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getCompanyDecoder(),
+/** Gets the codec for {@link RegisteredProgram} account data. */
+export function getRegisteredProgramCodec(): Codec<
+  RegisteredProgramArgs,
+  RegisteredProgram
+> {
+  return combineCodec(
+    getRegisteredProgramEncoder(),
+    getRegisteredProgramDecoder(),
   );
 }
 
-export async function fetchCompany<TAddress extends string = string>(
+export function decodeRegisteredProgram<TAddress extends string = string>(
+  encodedAccount: EncodedAccount<TAddress>,
+): Account<RegisteredProgram, TAddress>;
+export function decodeRegisteredProgram<TAddress extends string = string>(
+  encodedAccount: MaybeEncodedAccount<TAddress>,
+): MaybeAccount<RegisteredProgram, TAddress>;
+export function decodeRegisteredProgram<TAddress extends string = string>(
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+):
+  | Account<RegisteredProgram, TAddress>
+  | MaybeAccount<RegisteredProgram, TAddress> {
+  return decodeAccount(
+    encodedAccount as MaybeEncodedAccount<TAddress>,
+    getRegisteredProgramDecoder(),
+  );
+}
+
+export async function fetchRegisteredProgram<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<Account<Company, TAddress>> {
-  const maybeAccount = await fetchMaybeCompany(rpc, address, config);
+): Promise<Account<RegisteredProgram, TAddress>> {
+  const maybeAccount = await fetchMaybeRegisteredProgram(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeCompany<TAddress extends string = string>(
+export async function fetchMaybeRegisteredProgram<
+  TAddress extends string = string,
+>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<MaybeAccount<Company, TAddress>> {
+): Promise<MaybeAccount<RegisteredProgram, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeCompany(maybeAccount);
+  return decodeRegisteredProgram(maybeAccount);
 }
 
-export async function fetchAllCompany(
+export async function fetchAllRegisteredProgram(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<Account<Company>[]> {
-  const maybeAccounts = await fetchAllMaybeCompany(rpc, addresses, config);
+): Promise<Account<RegisteredProgram>[]> {
+  const maybeAccounts = await fetchAllMaybeRegisteredProgram(
+    rpc,
+    addresses,
+    config,
+  );
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeCompany(
+export async function fetchAllMaybeRegisteredProgram(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<MaybeAccount<Company>[]> {
+): Promise<MaybeAccount<RegisteredProgram>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeCompany(maybeAccount));
+  return maybeAccounts.map((maybeAccount) =>
+    decodeRegisteredProgram(maybeAccount),
+  );
 }

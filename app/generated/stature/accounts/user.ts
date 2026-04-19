@@ -59,7 +59,7 @@ export function getUserDiscriminatorBytes() {
 
 export type User = {
   discriminator: ReadonlyUint8Array;
-  id: Address;
+  wallet: Address;
   name: string;
   stature: bigint;
   isSuspended: boolean;
@@ -68,7 +68,7 @@ export type User = {
 };
 
 export type UserArgs = {
-  id: Address;
+  wallet: Address;
   name: string;
   stature: number | bigint;
   isSuspended: boolean;
@@ -81,7 +81,7 @@ export function getUserEncoder(): Encoder<UserArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["id", getAddressEncoder()],
+      ["wallet", getAddressEncoder()],
       ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["stature", getI64Encoder()],
       ["isSuspended", getBooleanEncoder()],
@@ -96,7 +96,7 @@ export function getUserEncoder(): Encoder<UserArgs> {
 export function getUserDecoder(): Decoder<User> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["id", getAddressDecoder()],
+    ["wallet", getAddressDecoder()],
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["stature", getI64Decoder()],
     ["isSuspended", getBooleanDecoder()],

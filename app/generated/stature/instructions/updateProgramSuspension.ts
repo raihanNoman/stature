@@ -32,25 +32,30 @@ import {
   type TransactionSigner,
   type WritableAccount,
 } from "@solana/kit";
-import { findConfigPda } from "../pdas";
+import { findConfigPda, findRegisteredProgramPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from "../shared";
 
-export const UPDATE_COMPANY_SUSPENSION_DISCRIMINATOR = new Uint8Array([
-  120, 52, 237, 229, 142, 44, 145, 193,
+export const UPDATE_PROGRAM_SUSPENSION_DISCRIMINATOR = new Uint8Array([
+  76, 60, 171, 234, 218, 243, 36, 113,
 ]);
 
-export function getUpdateCompanySuspensionDiscriminatorBytes() {
+export function getUpdateProgramSuspensionDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_COMPANY_SUSPENSION_DISCRIMINATOR,
+    UPDATE_PROGRAM_SUSPENSION_DISCRIMINATOR,
   );
 }
 
-export type UpdateCompanySuspensionInstruction<
+export type UpdateProgramSuspensionInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountCompany extends string | AccountMeta<string> = string,
+  TAccountTargetProgram extends string | AccountMeta<string> = string,
+  TAccountRegisteredProgram extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -63,23 +68,26 @@ export type UpdateCompanySuspensionInstruction<
       TAccountConfig extends string
         ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
-      TAccountCompany extends string
-        ? WritableAccount<TAccountCompany>
-        : TAccountCompany,
+      TAccountTargetProgram extends string
+        ? ReadonlyAccount<TAccountTargetProgram>
+        : TAccountTargetProgram,
+      TAccountRegisteredProgram extends string
+        ? WritableAccount<TAccountRegisteredProgram>
+        : TAccountRegisteredProgram,
       ...TRemainingAccounts,
     ]
   >;
 
-export type UpdateCompanySuspensionInstructionData = {
+export type UpdateProgramSuspensionInstructionData = {
   discriminator: ReadonlyUint8Array;
   isSuspended: boolean;
 };
 
-export type UpdateCompanySuspensionInstructionDataArgs = {
+export type UpdateProgramSuspensionInstructionDataArgs = {
   isSuspended: boolean;
 };
 
-export function getUpdateCompanySuspensionInstructionDataEncoder(): FixedSizeEncoder<UpdateCompanySuspensionInstructionDataArgs> {
+export function getUpdateProgramSuspensionInstructionDataEncoder(): FixedSizeEncoder<UpdateProgramSuspensionInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
@@ -87,57 +95,62 @@ export function getUpdateCompanySuspensionInstructionDataEncoder(): FixedSizeEnc
     ]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_COMPANY_SUSPENSION_DISCRIMINATOR,
+      discriminator: UPDATE_PROGRAM_SUSPENSION_DISCRIMINATOR,
     }),
   );
 }
 
-export function getUpdateCompanySuspensionInstructionDataDecoder(): FixedSizeDecoder<UpdateCompanySuspensionInstructionData> {
+export function getUpdateProgramSuspensionInstructionDataDecoder(): FixedSizeDecoder<UpdateProgramSuspensionInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["isSuspended", getBooleanDecoder()],
   ]);
 }
 
-export function getUpdateCompanySuspensionInstructionDataCodec(): FixedSizeCodec<
-  UpdateCompanySuspensionInstructionDataArgs,
-  UpdateCompanySuspensionInstructionData
+export function getUpdateProgramSuspensionInstructionDataCodec(): FixedSizeCodec<
+  UpdateProgramSuspensionInstructionDataArgs,
+  UpdateProgramSuspensionInstructionData
 > {
   return combineCodec(
-    getUpdateCompanySuspensionInstructionDataEncoder(),
-    getUpdateCompanySuspensionInstructionDataDecoder(),
+    getUpdateProgramSuspensionInstructionDataEncoder(),
+    getUpdateProgramSuspensionInstructionDataDecoder(),
   );
 }
 
-export type UpdateCompanySuspensionAsyncInput<
+export type UpdateProgramSuspensionAsyncInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
-  TAccountCompany extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  company: Address<TAccountCompany>;
-  isSuspended: UpdateCompanySuspensionInstructionDataArgs["isSuspended"];
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram?: Address<TAccountRegisteredProgram>;
+  isSuspended: UpdateProgramSuspensionInstructionDataArgs["isSuspended"];
 };
 
-export async function getUpdateCompanySuspensionInstructionAsync<
+export async function getUpdateProgramSuspensionInstructionAsync<
   TAccountAdmin extends string,
   TAccountConfig extends string,
-  TAccountCompany extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateCompanySuspensionAsyncInput<
+  input: UpdateProgramSuspensionAsyncInput<
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  UpdateCompanySuspensionInstruction<
+  UpdateProgramSuspensionInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >
 > {
   // Program address.
@@ -147,7 +160,11 @@ export async function getUpdateCompanySuspensionInstructionAsync<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
-    company: { value: input.company ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -161,54 +178,66 @@ export async function getUpdateCompanySuspensionInstructionAsync<
   if (!accounts.config.value) {
     accounts.config.value = await findConfigPda();
   }
+  if (!accounts.registeredProgram.value) {
+    accounts.registeredProgram.value = await findRegisteredProgramPda({
+      targetProgram: expectAddress(accounts.targetProgram.value),
+    });
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
     ],
-    data: getUpdateCompanySuspensionInstructionDataEncoder().encode(
-      args as UpdateCompanySuspensionInstructionDataArgs,
+    data: getUpdateProgramSuspensionInstructionDataEncoder().encode(
+      args as UpdateProgramSuspensionInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateCompanySuspensionInstruction<
+  } as UpdateProgramSuspensionInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >);
 }
 
-export type UpdateCompanySuspensionInput<
+export type UpdateProgramSuspensionInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
-  TAccountCompany extends string = string,
+  TAccountTargetProgram extends string = string,
+  TAccountRegisteredProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  company: Address<TAccountCompany>;
-  isSuspended: UpdateCompanySuspensionInstructionDataArgs["isSuspended"];
+  targetProgram: Address<TAccountTargetProgram>;
+  registeredProgram: Address<TAccountRegisteredProgram>;
+  isSuspended: UpdateProgramSuspensionInstructionDataArgs["isSuspended"];
 };
 
-export function getUpdateCompanySuspensionInstruction<
+export function getUpdateProgramSuspensionInstruction<
   TAccountAdmin extends string,
   TAccountConfig extends string,
-  TAccountCompany extends string,
+  TAccountTargetProgram extends string,
+  TAccountRegisteredProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateCompanySuspensionInput<
+  input: UpdateProgramSuspensionInput<
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateCompanySuspensionInstruction<
+): UpdateProgramSuspensionInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountConfig,
-  TAccountCompany
+  TAccountTargetProgram,
+  TAccountRegisteredProgram
 > {
   // Program address.
   const programAddress = config?.programAddress ?? STATURE_PROGRAM_ADDRESS;
@@ -217,7 +246,11 @@ export function getUpdateCompanySuspensionInstruction<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: false },
     config: { value: input.config ?? null, isWritable: false },
-    company: { value: input.company ?? null, isWritable: true },
+    targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    registeredProgram: {
+      value: input.registeredProgram ?? null,
+      isWritable: true,
+    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -232,21 +265,23 @@ export function getUpdateCompanySuspensionInstruction<
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.config),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.registeredProgram),
     ],
-    data: getUpdateCompanySuspensionInstructionDataEncoder().encode(
-      args as UpdateCompanySuspensionInstructionDataArgs,
+    data: getUpdateProgramSuspensionInstructionDataEncoder().encode(
+      args as UpdateProgramSuspensionInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateCompanySuspensionInstruction<
+  } as UpdateProgramSuspensionInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
-    TAccountCompany
+    TAccountTargetProgram,
+    TAccountRegisteredProgram
   >);
 }
 
-export type ParsedUpdateCompanySuspensionInstruction<
+export type ParsedUpdateProgramSuspensionInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -254,20 +289,21 @@ export type ParsedUpdateCompanySuspensionInstruction<
   accounts: {
     admin: TAccountMetas[0];
     config: TAccountMetas[1];
-    company: TAccountMetas[2];
+    targetProgram: TAccountMetas[2];
+    registeredProgram: TAccountMetas[3];
   };
-  data: UpdateCompanySuspensionInstructionData;
+  data: UpdateProgramSuspensionInstructionData;
 };
 
-export function parseUpdateCompanySuspensionInstruction<
+export function parseUpdateProgramSuspensionInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateCompanySuspensionInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedUpdateProgramSuspensionInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -282,9 +318,10 @@ export function parseUpdateCompanySuspensionInstruction<
     accounts: {
       admin: getNextAccount(),
       config: getNextAccount(),
-      company: getNextAccount(),
+      targetProgram: getNextAccount(),
+      registeredProgram: getNextAccount(),
     },
-    data: getUpdateCompanySuspensionInstructionDataDecoder().decode(
+    data: getUpdateProgramSuspensionInstructionDataDecoder().decode(
       instruction.data,
     ),
   };

@@ -6,15 +6,14 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./getUserStature";
-export * from "./initializeCompany";
-export * from "./initializeConfig";
-export * from "./initializeUser";
+export * from "./createAdmin";
+export * from "./createProgram";
+export * from "./createUser";
 export * from "./updateAdmin";
-export * from "./updateCompanyRecordCap";
-export * from "./updateCompanyStature";
-export * from "./updateCompanySuspension";
-export * from "./updateCompanyVerifiedStatus";
-export * from "./updateCompanyWeight";
+export * from "./updateProgramRecordCap";
+export * from "./updateProgramStature";
+export * from "./updateProgramSuspension";
+export * from "./updateProgramVerifiedStatus";
+export * from "./updateProgramWeight";
 export * from "./updateUserStature";
 export * from "./updateUserSuspension";

@@ -7,8 +7,6 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -16,17 +14,13 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -36,28 +30,24 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findCompanyPda } from "../pdas";
+import { findConfigPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
-import {
-  expectAddress,
-  getAccountMetaFactory,
-  type ResolvedAccount,
-} from "../shared";
+import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
-export const INITIALIZE_COMPANY_DISCRIMINATOR = new Uint8Array([
-  75, 156, 55, 94, 184, 64, 58, 30,
+export const CREATE_ADMIN_DISCRIMINATOR = new Uint8Array([
+  235, 218, 207, 161, 38, 135, 223, 48,
 ]);
 
-export function getInitializeCompanyDiscriminatorBytes() {
+export function getCreateAdminDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_COMPANY_DISCRIMINATOR,
+    CREATE_ADMIN_DISCRIMINATOR,
   );
 }
 
-export type InitializeCompanyInstruction<
+export type CreateAdminInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountCompanyRep extends string | AccountMeta<string> = string,
-  TAccountCompany extends string | AccountMeta<string> = string,
+  TAccountAdmin extends string | AccountMeta<string> = string,
+  TAccountConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -65,13 +55,13 @@ export type InitializeCompanyInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountCompanyRep extends string
-        ? WritableSignerAccount<TAccountCompanyRep> &
-            AccountSignerMeta<TAccountCompanyRep>
-        : TAccountCompanyRep,
-      TAccountCompany extends string
-        ? WritableAccount<TAccountCompany>
-        : TAccountCompany,
+      TAccountAdmin extends string
+        ? WritableSignerAccount<TAccountAdmin> &
+            AccountSignerMeta<TAccountAdmin>
+        : TAccountAdmin,
+      TAccountConfig extends string
+        ? WritableAccount<TAccountConfig>
+        : TAccountConfig,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -79,68 +69,60 @@ export type InitializeCompanyInstruction<
     ]
   >;
 
-export type InitializeCompanyInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  name: string;
-};
+export type CreateAdminInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type InitializeCompanyInstructionDataArgs = { name: string };
+export type CreateAdminInstructionDataArgs = {};
 
-export function getInitializeCompanyInstructionDataEncoder(): Encoder<InitializeCompanyInstructionDataArgs> {
+export function getCreateAdminInstructionDataEncoder(): FixedSizeEncoder<CreateAdminInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_COMPANY_DISCRIMINATOR }),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({ ...value, discriminator: CREATE_ADMIN_DISCRIMINATOR }),
   );
 }
 
-export function getInitializeCompanyInstructionDataDecoder(): Decoder<InitializeCompanyInstructionData> {
+export function getCreateAdminInstructionDataDecoder(): FixedSizeDecoder<CreateAdminInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getInitializeCompanyInstructionDataCodec(): Codec<
-  InitializeCompanyInstructionDataArgs,
-  InitializeCompanyInstructionData
+export function getCreateAdminInstructionDataCodec(): FixedSizeCodec<
+  CreateAdminInstructionDataArgs,
+  CreateAdminInstructionData
 > {
   return combineCodec(
-    getInitializeCompanyInstructionDataEncoder(),
-    getInitializeCompanyInstructionDataDecoder(),
+    getCreateAdminInstructionDataEncoder(),
+    getCreateAdminInstructionDataDecoder(),
   );
 }
 
-export type InitializeCompanyAsyncInput<
-  TAccountCompanyRep extends string = string,
-  TAccountCompany extends string = string,
+export type CreateAdminAsyncInput<
+  TAccountAdmin extends string = string,
+  TAccountConfig extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  companyRep: TransactionSigner<TAccountCompanyRep>;
-  company?: Address<TAccountCompany>;
+  admin: TransactionSigner<TAccountAdmin>;
+  config?: Address<TAccountConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
-  name: InitializeCompanyInstructionDataArgs["name"];
 };
 
-export async function getInitializeCompanyInstructionAsync<
-  TAccountCompanyRep extends string,
-  TAccountCompany extends string,
+export async function getCreateAdminInstructionAsync<
+  TAccountAdmin extends string,
+  TAccountConfig extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeCompanyAsyncInput<
-    TAccountCompanyRep,
-    TAccountCompany,
+  input: CreateAdminAsyncInput<
+    TAccountAdmin,
+    TAccountConfig,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  InitializeCompanyInstruction<
+  CreateAdminInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountAdmin,
+    TAccountConfig,
     TAccountSystemProgram
   >
 > {
@@ -149,8 +131,8 @@ export async function getInitializeCompanyInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    companyRep: { value: input.companyRep ?? null, isWritable: true },
-    company: { value: input.company ?? null, isWritable: true },
+    admin: { value: input.admin ?? null, isWritable: true },
+    config: { value: input.config ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -158,14 +140,9 @@ export async function getInitializeCompanyInstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
-  if (!accounts.company.value) {
-    accounts.company.value = await findCompanyPda({
-      companyRep: expectAddress(accounts.companyRep.value),
-    });
+  if (!accounts.config.value) {
+    accounts.config.value = await findConfigPda();
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -175,49 +152,42 @@ export async function getInitializeCompanyInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.companyRep),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.config),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeCompanyInstructionDataEncoder().encode(
-      args as InitializeCompanyInstructionDataArgs,
-    ),
+    data: getCreateAdminInstructionDataEncoder().encode({}),
     programAddress,
-  } as InitializeCompanyInstruction<
+  } as CreateAdminInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountAdmin,
+    TAccountConfig,
     TAccountSystemProgram
   >);
 }
 
-export type InitializeCompanyInput<
-  TAccountCompanyRep extends string = string,
-  TAccountCompany extends string = string,
+export type CreateAdminInput<
+  TAccountAdmin extends string = string,
+  TAccountConfig extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  companyRep: TransactionSigner<TAccountCompanyRep>;
-  company: Address<TAccountCompany>;
+  admin: TransactionSigner<TAccountAdmin>;
+  config: Address<TAccountConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
-  name: InitializeCompanyInstructionDataArgs["name"];
 };
 
-export function getInitializeCompanyInstruction<
-  TAccountCompanyRep extends string,
-  TAccountCompany extends string,
+export function getCreateAdminInstruction<
+  TAccountAdmin extends string,
+  TAccountConfig extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeCompanyInput<
-    TAccountCompanyRep,
-    TAccountCompany,
-    TAccountSystemProgram
-  >,
+  input: CreateAdminInput<TAccountAdmin, TAccountConfig, TAccountSystemProgram>,
   config?: { programAddress?: TProgramAddress },
-): InitializeCompanyInstruction<
+): CreateAdminInstruction<
   TProgramAddress,
-  TAccountCompanyRep,
-  TAccountCompany,
+  TAccountAdmin,
+  TAccountConfig,
   TAccountSystemProgram
 > {
   // Program address.
@@ -225,17 +195,14 @@ export function getInitializeCompanyInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    companyRep: { value: input.companyRep ?? null, isWritable: true },
-    company: { value: input.company ?? null, isWritable: true },
+    admin: { value: input.admin ?? null, isWritable: true },
+    config: { value: input.config ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -246,43 +213,41 @@ export function getInitializeCompanyInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.companyRep),
-      getAccountMeta(accounts.company),
+      getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.config),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeCompanyInstructionDataEncoder().encode(
-      args as InitializeCompanyInstructionDataArgs,
-    ),
+    data: getCreateAdminInstructionDataEncoder().encode({}),
     programAddress,
-  } as InitializeCompanyInstruction<
+  } as CreateAdminInstruction<
     TProgramAddress,
-    TAccountCompanyRep,
-    TAccountCompany,
+    TAccountAdmin,
+    TAccountConfig,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedInitializeCompanyInstruction<
+export type ParsedCreateAdminInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    companyRep: TAccountMetas[0];
-    company: TAccountMetas[1];
+    admin: TAccountMetas[0];
+    config: TAccountMetas[1];
     systemProgram: TAccountMetas[2];
   };
-  data: InitializeCompanyInstructionData;
+  data: CreateAdminInstructionData;
 };
 
-export function parseInitializeCompanyInstruction<
+export function parseCreateAdminInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedInitializeCompanyInstruction<TProgram, TAccountMetas> {
+): ParsedCreateAdminInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -296,10 +261,10 @@ export function parseInitializeCompanyInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      companyRep: getNextAccount(),
-      company: getNextAccount(),
+      admin: getNextAccount(),
+      config: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getInitializeCompanyInstructionDataDecoder().decode(instruction.data),
+    data: getCreateAdminInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -14,13 +16,17 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
+  type Codec,
+  type Decoder,
+  type Encoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -30,24 +36,26 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findConfigPda } from "../pdas";
+import { findUserPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from "../shared";
 
-export const INITIALIZE_CONFIG_DISCRIMINATOR = new Uint8Array([
-  208, 127, 21, 1, 194, 190, 196, 70,
+export const CREATE_USER_DISCRIMINATOR = new Uint8Array([
+  108, 227, 130, 130, 252, 109, 75, 218,
 ]);
 
-export function getInitializeConfigDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_CONFIG_DISCRIMINATOR,
-  );
+export function getCreateUserDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(CREATE_USER_DISCRIMINATOR);
 }
 
-export type InitializeConfigInstruction<
+export type CreateUserInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountAdmin extends string | AccountMeta<string> = string,
-  TAccountConfig extends string | AccountMeta<string> = string,
+  TAccountOwner extends string | AccountMeta<string> = string,
+  TAccountUser extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -55,13 +63,13 @@ export type InitializeConfigInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountAdmin extends string
-        ? WritableSignerAccount<TAccountAdmin> &
-            AccountSignerMeta<TAccountAdmin>
-        : TAccountAdmin,
-      TAccountConfig extends string
-        ? WritableAccount<TAccountConfig>
-        : TAccountConfig,
+      TAccountOwner extends string
+        ? WritableSignerAccount<TAccountOwner> &
+            AccountSignerMeta<TAccountOwner>
+        : TAccountOwner,
+      TAccountUser extends string
+        ? WritableAccount<TAccountUser>
+        : TAccountUser,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -69,62 +77,68 @@ export type InitializeConfigInstruction<
     ]
   >;
 
-export type InitializeConfigInstructionData = {
+export type CreateUserInstructionData = {
   discriminator: ReadonlyUint8Array;
+  name: string;
 };
 
-export type InitializeConfigInstructionDataArgs = {};
+export type CreateUserInstructionDataArgs = { name: string };
 
-export function getInitializeConfigInstructionDataEncoder(): FixedSizeEncoder<InitializeConfigInstructionDataArgs> {
+export function getCreateUserInstructionDataEncoder(): Encoder<CreateUserInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: INITIALIZE_CONFIG_DISCRIMINATOR }),
+    getStructEncoder([
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+    ]),
+    (value) => ({ ...value, discriminator: CREATE_USER_DISCRIMINATOR }),
   );
 }
 
-export function getInitializeConfigInstructionDataDecoder(): FixedSizeDecoder<InitializeConfigInstructionData> {
+export function getCreateUserInstructionDataDecoder(): Decoder<CreateUserInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getInitializeConfigInstructionDataCodec(): FixedSizeCodec<
-  InitializeConfigInstructionDataArgs,
-  InitializeConfigInstructionData
+export function getCreateUserInstructionDataCodec(): Codec<
+  CreateUserInstructionDataArgs,
+  CreateUserInstructionData
 > {
   return combineCodec(
-    getInitializeConfigInstructionDataEncoder(),
-    getInitializeConfigInstructionDataDecoder(),
+    getCreateUserInstructionDataEncoder(),
+    getCreateUserInstructionDataDecoder(),
   );
 }
 
-export type InitializeConfigAsyncInput<
-  TAccountAdmin extends string = string,
-  TAccountConfig extends string = string,
+export type CreateUserAsyncInput<
+  TAccountOwner extends string = string,
+  TAccountUser extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
-  config?: Address<TAccountConfig>;
+  owner: TransactionSigner<TAccountOwner>;
+  user?: Address<TAccountUser>;
   systemProgram?: Address<TAccountSystemProgram>;
+  name: CreateUserInstructionDataArgs["name"];
 };
 
-export async function getInitializeConfigInstructionAsync<
-  TAccountAdmin extends string,
-  TAccountConfig extends string,
+export async function getCreateUserInstructionAsync<
+  TAccountOwner extends string,
+  TAccountUser extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeConfigAsyncInput<
-    TAccountAdmin,
-    TAccountConfig,
+  input: CreateUserAsyncInput<
+    TAccountOwner,
+    TAccountUser,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  InitializeConfigInstruction<
+  CreateUserInstruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountConfig,
+    TAccountOwner,
+    TAccountUser,
     TAccountSystemProgram
   >
 > {
@@ -133,8 +147,8 @@ export async function getInitializeConfigInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    admin: { value: input.admin ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: true },
+    user: { value: input.user ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -142,9 +156,14 @@ export async function getInitializeConfigInstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
-  if (!accounts.config.value) {
-    accounts.config.value = await findConfigPda();
+  if (!accounts.user.value) {
+    accounts.user.value = await findUserPda({
+      owner: expectAddress(accounts.owner.value),
+    });
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -154,46 +173,45 @@ export async function getInitializeConfigInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.admin),
-      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.user),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeConfigInstructionDataEncoder().encode({}),
+    data: getCreateUserInstructionDataEncoder().encode(
+      args as CreateUserInstructionDataArgs,
+    ),
     programAddress,
-  } as InitializeConfigInstruction<
+  } as CreateUserInstruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountConfig,
+    TAccountOwner,
+    TAccountUser,
     TAccountSystemProgram
   >);
 }
 
-export type InitializeConfigInput<
-  TAccountAdmin extends string = string,
-  TAccountConfig extends string = string,
+export type CreateUserInput<
+  TAccountOwner extends string = string,
+  TAccountUser extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
-  config: Address<TAccountConfig>;
+  owner: TransactionSigner<TAccountOwner>;
+  user: Address<TAccountUser>;
   systemProgram?: Address<TAccountSystemProgram>;
+  name: CreateUserInstructionDataArgs["name"];
 };
 
-export function getInitializeConfigInstruction<
-  TAccountAdmin extends string,
-  TAccountConfig extends string,
+export function getCreateUserInstruction<
+  TAccountOwner extends string,
+  TAccountUser extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: InitializeConfigInput<
-    TAccountAdmin,
-    TAccountConfig,
-    TAccountSystemProgram
-  >,
+  input: CreateUserInput<TAccountOwner, TAccountUser, TAccountSystemProgram>,
   config?: { programAddress?: TProgramAddress },
-): InitializeConfigInstruction<
+): CreateUserInstruction<
   TProgramAddress,
-  TAccountAdmin,
-  TAccountConfig,
+  TAccountOwner,
+  TAccountUser,
   TAccountSystemProgram
 > {
   // Program address.
@@ -201,14 +219,17 @@ export function getInitializeConfigInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    admin: { value: input.admin ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: true },
+    user: { value: input.user ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -219,41 +240,43 @@ export function getInitializeConfigInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.admin),
-      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.user),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeConfigInstructionDataEncoder().encode({}),
+    data: getCreateUserInstructionDataEncoder().encode(
+      args as CreateUserInstructionDataArgs,
+    ),
     programAddress,
-  } as InitializeConfigInstruction<
+  } as CreateUserInstruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountConfig,
+    TAccountOwner,
+    TAccountUser,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedInitializeConfigInstruction<
+export type ParsedCreateUserInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    admin: TAccountMetas[0];
-    config: TAccountMetas[1];
+    owner: TAccountMetas[0];
+    user: TAccountMetas[1];
     systemProgram: TAccountMetas[2];
   };
-  data: InitializeConfigInstructionData;
+  data: CreateUserInstructionData;
 };
 
-export function parseInitializeConfigInstruction<
+export function parseCreateUserInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedInitializeConfigInstruction<TProgram, TAccountMetas> {
+): ParsedCreateUserInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -267,10 +290,10 @@ export function parseInitializeConfigInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      admin: getNextAccount(),
-      config: getNextAccount(),
+      owner: getNextAccount(),
+      user: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getInitializeConfigInstructionDataDecoder().decode(instruction.data),
+    data: getCreateUserInstructionDataDecoder().decode(instruction.data),
   };
 }

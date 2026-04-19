@@ -53,7 +53,7 @@ export function getStatureRecordDiscriminatorBytes() {
 
 export type StatureRecord = {
   discriminator: ReadonlyUint8Array;
-  company: Address;
+  registeredProgram: Address;
   user: Address;
   amount: bigint;
   timestamp: bigint;
@@ -62,7 +62,7 @@ export type StatureRecord = {
 };
 
 export type StatureRecordArgs = {
-  company: Address;
+  registeredProgram: Address;
   user: Address;
   amount: number | bigint;
   timestamp: number | bigint;
@@ -75,7 +75,7 @@ export function getStatureRecordEncoder(): FixedSizeEncoder<StatureRecordArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["company", getAddressEncoder()],
+      ["registeredProgram", getAddressEncoder()],
       ["user", getAddressEncoder()],
       ["amount", getI64Encoder()],
       ["timestamp", getI64Encoder()],
@@ -90,7 +90,7 @@ export function getStatureRecordEncoder(): FixedSizeEncoder<StatureRecordArgs> {
 export function getStatureRecordDecoder(): FixedSizeDecoder<StatureRecord> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["company", getAddressDecoder()],
+    ["registeredProgram", getAddressDecoder()],
     ["user", getAddressDecoder()],
     ["amount", getI64Decoder()],
     ["timestamp", getI64Decoder()],

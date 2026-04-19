@@ -17,28 +17,26 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
-  parseGetUserStatureInstruction,
-  parseInitializeCompanyInstruction,
-  parseInitializeConfigInstruction,
-  parseInitializeUserInstruction,
+  parseCreateAdminInstruction,
+  parseCreateProgramInstruction,
+  parseCreateUserInstruction,
   parseUpdateAdminInstruction,
-  parseUpdateCompanyRecordCapInstruction,
-  parseUpdateCompanyStatureInstruction,
-  parseUpdateCompanySuspensionInstruction,
-  parseUpdateCompanyVerifiedStatusInstruction,
-  parseUpdateCompanyWeightInstruction,
+  parseUpdateProgramRecordCapInstruction,
+  parseUpdateProgramStatureInstruction,
+  parseUpdateProgramSuspensionInstruction,
+  parseUpdateProgramVerifiedStatusInstruction,
+  parseUpdateProgramWeightInstruction,
   parseUpdateUserStatureInstruction,
   parseUpdateUserSuspensionInstruction,
-  type ParsedGetUserStatureInstruction,
-  type ParsedInitializeCompanyInstruction,
-  type ParsedInitializeConfigInstruction,
-  type ParsedInitializeUserInstruction,
+  type ParsedCreateAdminInstruction,
+  type ParsedCreateProgramInstruction,
+  type ParsedCreateUserInstruction,
   type ParsedUpdateAdminInstruction,
-  type ParsedUpdateCompanyRecordCapInstruction,
-  type ParsedUpdateCompanyStatureInstruction,
-  type ParsedUpdateCompanySuspensionInstruction,
-  type ParsedUpdateCompanyVerifiedStatusInstruction,
-  type ParsedUpdateCompanyWeightInstruction,
+  type ParsedUpdateProgramRecordCapInstruction,
+  type ParsedUpdateProgramStatureInstruction,
+  type ParsedUpdateProgramSuspensionInstruction,
+  type ParsedUpdateProgramVerifiedStatusInstruction,
+  type ParsedUpdateProgramWeightInstruction,
   type ParsedUpdateUserStatureInstruction,
   type ParsedUpdateUserSuspensionInstruction,
 } from "../instructions";
@@ -47,9 +45,9 @@ export const STATURE_PROGRAM_ADDRESS =
   "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb" as Address<"9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb">;
 
 export enum StatureAccount {
-  Company,
-  CompanyUserState,
   Config,
+  ProgramUserState,
+  RegisteredProgram,
   StatureRecord,
   User,
 }
@@ -62,34 +60,34 @@ export function identifyStatureAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([32, 212, 52, 137, 90, 7, 206, 183]),
-      ),
-      0,
-    )
-  ) {
-    return StatureAccount.Company;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([80, 11, 105, 24, 246, 157, 76, 249]),
-      ),
-      0,
-    )
-  ) {
-    return StatureAccount.CompanyUserState;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([155, 12, 170, 224, 30, 250, 204, 130]),
       ),
       0,
     )
   ) {
     return StatureAccount.Config;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([66, 174, 2, 36, 122, 62, 109, 0]),
+      ),
+      0,
+    )
+  ) {
+    return StatureAccount.ProgramUserState;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([31, 251, 180, 235, 3, 116, 50, 4]),
+      ),
+      0,
+    )
+  ) {
+    return StatureAccount.RegisteredProgram;
   }
   if (
     containsBytes(
@@ -119,16 +117,15 @@ export function identifyStatureAccount(
 }
 
 export enum StatureInstruction {
-  GetUserStature,
-  InitializeCompany,
-  InitializeConfig,
-  InitializeUser,
+  CreateAdmin,
+  CreateProgram,
+  CreateUser,
   UpdateAdmin,
-  UpdateCompanyRecordCap,
-  UpdateCompanyStature,
-  UpdateCompanySuspension,
-  UpdateCompanyVerifiedStatus,
-  UpdateCompanyWeight,
+  UpdateProgramRecordCap,
+  UpdateProgramStature,
+  UpdateProgramSuspension,
+  UpdateProgramVerifiedStatus,
+  UpdateProgramWeight,
   UpdateUserStature,
   UpdateUserSuspension,
 }
@@ -141,45 +138,34 @@ export function identifyStatureInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([110, 72, 76, 190, 154, 252, 41, 145]),
+        new Uint8Array([235, 218, 207, 161, 38, 135, 223, 48]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.GetUserStature;
+    return StatureInstruction.CreateAdmin;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([75, 156, 55, 94, 184, 64, 58, 30]),
+        new Uint8Array([62, 207, 180, 162, 90, 59, 148, 148]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.InitializeCompany;
+    return StatureInstruction.CreateProgram;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([208, 127, 21, 1, 194, 190, 196, 70]),
+        new Uint8Array([108, 227, 130, 130, 252, 109, 75, 218]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.InitializeConfig;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([111, 17, 185, 250, 60, 122, 38, 254]),
-      ),
-      0,
-    )
-  ) {
-    return StatureInstruction.InitializeUser;
+    return StatureInstruction.CreateUser;
   }
   if (
     containsBytes(
@@ -196,56 +182,56 @@ export function identifyStatureInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([66, 167, 250, 105, 81, 123, 22, 208]),
+        new Uint8Array([230, 8, 104, 163, 212, 160, 159, 245]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.UpdateCompanyRecordCap;
+    return StatureInstruction.UpdateProgramRecordCap;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([110, 193, 217, 155, 239, 246, 224, 147]),
+        new Uint8Array([3, 104, 109, 251, 163, 46, 34, 49]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.UpdateCompanyStature;
+    return StatureInstruction.UpdateProgramStature;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([120, 52, 237, 229, 142, 44, 145, 193]),
+        new Uint8Array([76, 60, 171, 234, 218, 243, 36, 113]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.UpdateCompanySuspension;
+    return StatureInstruction.UpdateProgramSuspension;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([101, 49, 176, 44, 13, 83, 171, 219]),
+        new Uint8Array([209, 244, 28, 238, 244, 64, 88, 21]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.UpdateCompanyVerifiedStatus;
+    return StatureInstruction.UpdateProgramVerifiedStatus;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([188, 93, 104, 46, 178, 63, 57, 20]),
+        new Uint8Array([10, 20, 108, 237, 172, 126, 132, 162]),
       ),
       0,
     )
   ) {
-    return StatureInstruction.UpdateCompanyWeight;
+    return StatureInstruction.UpdateProgramWeight;
   }
   if (
     containsBytes(
@@ -278,35 +264,32 @@ export type ParsedStatureInstruction<
   TProgram extends string = "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb",
 > =
   | ({
-      instructionType: StatureInstruction.GetUserStature;
-    } & ParsedGetUserStatureInstruction<TProgram>)
+      instructionType: StatureInstruction.CreateAdmin;
+    } & ParsedCreateAdminInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.InitializeCompany;
-    } & ParsedInitializeCompanyInstruction<TProgram>)
+      instructionType: StatureInstruction.CreateProgram;
+    } & ParsedCreateProgramInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.InitializeConfig;
-    } & ParsedInitializeConfigInstruction<TProgram>)
-  | ({
-      instructionType: StatureInstruction.InitializeUser;
-    } & ParsedInitializeUserInstruction<TProgram>)
+      instructionType: StatureInstruction.CreateUser;
+    } & ParsedCreateUserInstruction<TProgram>)
   | ({
       instructionType: StatureInstruction.UpdateAdmin;
     } & ParsedUpdateAdminInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.UpdateCompanyRecordCap;
-    } & ParsedUpdateCompanyRecordCapInstruction<TProgram>)
+      instructionType: StatureInstruction.UpdateProgramRecordCap;
+    } & ParsedUpdateProgramRecordCapInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.UpdateCompanyStature;
-    } & ParsedUpdateCompanyStatureInstruction<TProgram>)
+      instructionType: StatureInstruction.UpdateProgramStature;
+    } & ParsedUpdateProgramStatureInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.UpdateCompanySuspension;
-    } & ParsedUpdateCompanySuspensionInstruction<TProgram>)
+      instructionType: StatureInstruction.UpdateProgramSuspension;
+    } & ParsedUpdateProgramSuspensionInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.UpdateCompanyVerifiedStatus;
-    } & ParsedUpdateCompanyVerifiedStatusInstruction<TProgram>)
+      instructionType: StatureInstruction.UpdateProgramVerifiedStatus;
+    } & ParsedUpdateProgramVerifiedStatusInstruction<TProgram>)
   | ({
-      instructionType: StatureInstruction.UpdateCompanyWeight;
-    } & ParsedUpdateCompanyWeightInstruction<TProgram>)
+      instructionType: StatureInstruction.UpdateProgramWeight;
+    } & ParsedUpdateProgramWeightInstruction<TProgram>)
   | ({
       instructionType: StatureInstruction.UpdateUserStature;
     } & ParsedUpdateUserStatureInstruction<TProgram>)
@@ -319,32 +302,25 @@ export function parseStatureInstruction<TProgram extends string>(
 ): ParsedStatureInstruction<TProgram> {
   const instructionType = identifyStatureInstruction(instruction);
   switch (instructionType) {
-    case StatureInstruction.GetUserStature: {
+    case StatureInstruction.CreateAdmin: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.GetUserStature,
-        ...parseGetUserStatureInstruction(instruction),
+        instructionType: StatureInstruction.CreateAdmin,
+        ...parseCreateAdminInstruction(instruction),
       };
     }
-    case StatureInstruction.InitializeCompany: {
+    case StatureInstruction.CreateProgram: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.InitializeCompany,
-        ...parseInitializeCompanyInstruction(instruction),
+        instructionType: StatureInstruction.CreateProgram,
+        ...parseCreateProgramInstruction(instruction),
       };
     }
-    case StatureInstruction.InitializeConfig: {
+    case StatureInstruction.CreateUser: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.InitializeConfig,
-        ...parseInitializeConfigInstruction(instruction),
-      };
-    }
-    case StatureInstruction.InitializeUser: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: StatureInstruction.InitializeUser,
-        ...parseInitializeUserInstruction(instruction),
+        instructionType: StatureInstruction.CreateUser,
+        ...parseCreateUserInstruction(instruction),
       };
     }
     case StatureInstruction.UpdateAdmin: {
@@ -354,39 +330,39 @@ export function parseStatureInstruction<TProgram extends string>(
         ...parseUpdateAdminInstruction(instruction),
       };
     }
-    case StatureInstruction.UpdateCompanyRecordCap: {
+    case StatureInstruction.UpdateProgramRecordCap: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.UpdateCompanyRecordCap,
-        ...parseUpdateCompanyRecordCapInstruction(instruction),
+        instructionType: StatureInstruction.UpdateProgramRecordCap,
+        ...parseUpdateProgramRecordCapInstruction(instruction),
       };
     }
-    case StatureInstruction.UpdateCompanyStature: {
+    case StatureInstruction.UpdateProgramStature: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.UpdateCompanyStature,
-        ...parseUpdateCompanyStatureInstruction(instruction),
+        instructionType: StatureInstruction.UpdateProgramStature,
+        ...parseUpdateProgramStatureInstruction(instruction),
       };
     }
-    case StatureInstruction.UpdateCompanySuspension: {
+    case StatureInstruction.UpdateProgramSuspension: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.UpdateCompanySuspension,
-        ...parseUpdateCompanySuspensionInstruction(instruction),
+        instructionType: StatureInstruction.UpdateProgramSuspension,
+        ...parseUpdateProgramSuspensionInstruction(instruction),
       };
     }
-    case StatureInstruction.UpdateCompanyVerifiedStatus: {
+    case StatureInstruction.UpdateProgramVerifiedStatus: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.UpdateCompanyVerifiedStatus,
-        ...parseUpdateCompanyVerifiedStatusInstruction(instruction),
+        instructionType: StatureInstruction.UpdateProgramVerifiedStatus,
+        ...parseUpdateProgramVerifiedStatusInstruction(instruction),
       };
     }
-    case StatureInstruction.UpdateCompanyWeight: {
+    case StatureInstruction.UpdateProgramWeight: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: StatureInstruction.UpdateCompanyWeight,
-        ...parseUpdateCompanyWeightInstruction(instruction),
+        instructionType: StatureInstruction.UpdateProgramWeight,
+        ...parseUpdateProgramWeightInstruction(instruction),
       };
     }
     case StatureInstruction.UpdateUserStature: {

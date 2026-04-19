@@ -39,107 +39,111 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 
-export const COMPANY_USER_STATE_DISCRIMINATOR = new Uint8Array([
-  80, 11, 105, 24, 246, 157, 76, 249,
+export const PROGRAM_USER_STATE_DISCRIMINATOR = new Uint8Array([
+  66, 174, 2, 36, 122, 62, 109, 0,
 ]);
 
-export function getCompanyUserStateDiscriminatorBytes() {
+export function getProgramUserStateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    COMPANY_USER_STATE_DISCRIMINATOR,
+    PROGRAM_USER_STATE_DISCRIMINATOR,
   );
 }
 
-export type CompanyUserState = {
+export type ProgramUserState = {
   discriminator: ReadonlyUint8Array;
   lastUpdatedAt: bigint;
   lastNonce: bigint;
+  totalRecords: bigint;
   bump: number;
 };
 
-export type CompanyUserStateArgs = {
+export type ProgramUserStateArgs = {
   lastUpdatedAt: number | bigint;
   lastNonce: number | bigint;
+  totalRecords: number | bigint;
   bump: number;
 };
 
-/** Gets the encoder for {@link CompanyUserStateArgs} account data. */
-export function getCompanyUserStateEncoder(): FixedSizeEncoder<CompanyUserStateArgs> {
+/** Gets the encoder for {@link ProgramUserStateArgs} account data. */
+export function getProgramUserStateEncoder(): FixedSizeEncoder<ProgramUserStateArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["lastUpdatedAt", getI64Encoder()],
       ["lastNonce", getU64Encoder()],
+      ["totalRecords", getU64Encoder()],
       ["bump", getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: COMPANY_USER_STATE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: PROGRAM_USER_STATE_DISCRIMINATOR }),
   );
 }
 
-/** Gets the decoder for {@link CompanyUserState} account data. */
-export function getCompanyUserStateDecoder(): FixedSizeDecoder<CompanyUserState> {
+/** Gets the decoder for {@link ProgramUserState} account data. */
+export function getProgramUserStateDecoder(): FixedSizeDecoder<ProgramUserState> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["lastUpdatedAt", getI64Decoder()],
     ["lastNonce", getU64Decoder()],
+    ["totalRecords", getU64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }
 
-/** Gets the codec for {@link CompanyUserState} account data. */
-export function getCompanyUserStateCodec(): FixedSizeCodec<
-  CompanyUserStateArgs,
-  CompanyUserState
+/** Gets the codec for {@link ProgramUserState} account data. */
+export function getProgramUserStateCodec(): FixedSizeCodec<
+  ProgramUserStateArgs,
+  ProgramUserState
 > {
   return combineCodec(
-    getCompanyUserStateEncoder(),
-    getCompanyUserStateDecoder(),
+    getProgramUserStateEncoder(),
+    getProgramUserStateDecoder(),
   );
 }
 
-export function decodeCompanyUserState<TAddress extends string = string>(
+export function decodeProgramUserState<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress>,
-): Account<CompanyUserState, TAddress>;
-export function decodeCompanyUserState<TAddress extends string = string>(
+): Account<ProgramUserState, TAddress>;
+export function decodeProgramUserState<TAddress extends string = string>(
   encodedAccount: MaybeEncodedAccount<TAddress>,
-): MaybeAccount<CompanyUserState, TAddress>;
-export function decodeCompanyUserState<TAddress extends string = string>(
+): MaybeAccount<ProgramUserState, TAddress>;
+export function decodeProgramUserState<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ):
-  | Account<CompanyUserState, TAddress>
-  | MaybeAccount<CompanyUserState, TAddress> {
+  | Account<ProgramUserState, TAddress>
+  | MaybeAccount<ProgramUserState, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getCompanyUserStateDecoder(),
+    getProgramUserStateDecoder(),
   );
 }
 
-export async function fetchCompanyUserState<TAddress extends string = string>(
+export async function fetchProgramUserState<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<Account<CompanyUserState, TAddress>> {
-  const maybeAccount = await fetchMaybeCompanyUserState(rpc, address, config);
+): Promise<Account<ProgramUserState, TAddress>> {
+  const maybeAccount = await fetchMaybeProgramUserState(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeCompanyUserState<
+export async function fetchMaybeProgramUserState<
   TAddress extends string = string,
 >(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<MaybeAccount<CompanyUserState, TAddress>> {
+): Promise<MaybeAccount<ProgramUserState, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeCompanyUserState(maybeAccount);
+  return decodeProgramUserState(maybeAccount);
 }
 
-export async function fetchAllCompanyUserState(
+export async function fetchAllProgramUserState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<Account<CompanyUserState>[]> {
-  const maybeAccounts = await fetchAllMaybeCompanyUserState(
+): Promise<Account<ProgramUserState>[]> {
+  const maybeAccounts = await fetchAllMaybeProgramUserState(
     rpc,
     addresses,
     config,
@@ -148,17 +152,17 @@ export async function fetchAllCompanyUserState(
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeCompanyUserState(
+export async function fetchAllMaybeProgramUserState(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<MaybeAccount<CompanyUserState>[]> {
+): Promise<MaybeAccount<ProgramUserState>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) =>
-    decodeCompanyUserState(maybeAccount),
+    decodeProgramUserState(maybeAccount),
   );
 }
 
-export function getCompanyUserStateSize(): number {
-  return 25;
+export function getProgramUserStateSize(): number {
+  return 33;
 }
