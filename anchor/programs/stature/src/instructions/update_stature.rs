@@ -18,6 +18,7 @@ pub struct UpdateUserStatureCPI<'info> {
     #[account(
         mut,
         seeds = [b"registered_program", target_program.key().as_ref()],
+        owner = target_program.key() @ ErrorCode::InvalidSourceOwner, 
         bump = registered_program.bump,
         constraint = !registered_program.is_suspended@ ErrorCode::ProgramSuspended, 
         constraint = registered_program.is_verified @ ErrorCode::ProgramNotVerified,
@@ -71,14 +72,15 @@ pub struct UpdateUserStatureCPI<'info> {
 
 pub fn update_user_stature_via_cpi(
     ctx: Context<UpdateUserStatureCPI>,
-    amount: i64,
-    nonce: u64,
+    new_stature: i64,
+    memo: String, 
 ) -> Result<()> {
+    let now: i64 =  Clock::get()?.unix_timestamp;
     let registered_program = &mut ctx.accounts.registered_program;
     let user = &mut ctx.accounts.user;
     let source_account =  &mut ctx.accounts.registered_program_source_account;
     let record = &mut ctx.accounts.record;
-    let integrator_user_state = &mut ctx.accounts.program_user_state;
+    let program_user_state = &mut ctx.accounts.program_user_state;
 
 
 
@@ -99,60 +101,77 @@ pub fn update_user_stature_via_cpi(
     
     // 1. Logic Guards
     require!(!user.is_suspended, ErrorCode::UserSuspended);
-    require!(nonce > integrator_user_state.last_nonce,ErrorCode::InvalidNonce);
 
     // 2. Calculation Logic (Weighted by Program Authority)
     let weight_multiplier = registered_program.weight as i64;
-    let weighted_honor = amount
+    let weighted_stature = new_stature
         .checked_mul(weight_multiplier)
         .ok_or(ErrorCode::Overflow)?;
 
     // Anti-inflation scaling
     let value = user.stature.abs() as u64 + 1;
     let scale = (64 - value.leading_zeros()) as i64;
-    let adjusted_honor = weighted_honor
+    let adjusted_stature = weighted_stature
         .checked_div(scale.max(1))
         .ok_or(ErrorCode::Overflow)?;
 
     // 3. Update State
     user.stature = user
         .stature
-        .checked_add(adjusted_honor)
+        .checked_add(adjusted_stature)
         .ok_or(ErrorCode::Overflow)?;
 
     // Update Integration metrics
-    if amount > 0 {
+    if new_stature > 0 {
         registered_program.total_positive_raw = registered_program
             .total_positive_raw
-            .checked_add(amount)
+            .checked_add(new_stature)
             .ok_or(ErrorCode::Overflow)?;
+
+    }else {
+        registered_program.total_negative_raw = registered_program
+            .total_negative_raw
+            .checked_add(new_stature.abs())
+            .ok_or(ErrorCode::Overflow)?;
+
+}
+
         registered_program.stature = registered_program
             .stature
-            .checked_add(adjusted_honor)
+            .checked_add(adjusted_stature)
             .ok_or(ErrorCode::Overflow)?;
-    }
 
     // 4. Record keeping
-    integrator_user_state.last_nonce = nonce;
-    integrator_user_state.last_updated_at = Clock::get()?.unix_timestamp;
 
+    record.user = user.wallet.key(); 
     record.registered_program = registered_program.key();
-    record.user = user.key();
-    record.amount = adjusted_honor;
-    record.timestamp = integrator_user_state.last_updated_at;
+    record.registered_program_source_account = source_account.key();
+
+    record.stature = adjusted_stature;
+    record.memo = memo.clone();
+    record.bump = ctx.bumps.record;
+    record.user_record_idx = user.record_idx;
+
+    record.timestamp =now;
+    program_user_state.last_updated_at = now;
+
 
     user.record_idx += 1;
 
+    registered_program.record_count += 1;
+    program_user_state.total_records += 1;
+    program_user_state.bump = ctx.bumps.program_user_state; // Ensure bump is saved
 
     emit!(UpdateStatureEvent {
-        user: user.wallet,
+        user_wallet: user.wallet,
         program: registered_program.key(),
-        source: source_account.key(), 
-        amount: adjusted_honor.try_into().map_err(|_| ErrorCode::Overflow)?,
-        timestamp: record.timestamp, 
+        program_source_account: source_account.key(), 
+        stature: adjusted_stature.try_into().map_err(|_| ErrorCode::Overflow)?,
+        memo: memo.clone(), 
+        timestamp: now, 
     });
 
-    msg!("🟢 Stature Updated by Program: {}", registered_program.name);
+    msg!("🟢 Stature Updated: {} stature for user {} (wallet: {} ) by program: {}", adjusted_stature, user.key(), user.wallet.key(),  registered_program.name);
     Ok(())
 }
 
@@ -161,10 +180,12 @@ pub fn update_user_stature_via_cpi(
 // for emiting event
 #[event]
 pub struct UpdateStatureEvent {
-    pub user: Pubkey,
+    pub user_wallet: Pubkey,
     pub program: Pubkey,
-    pub source: Pubkey,
-    pub amount: i64,
+    pub program_source_account: Pubkey,
+    pub stature: i64,
+
+    pub memo: String, 
     pub timestamp: i64,
 }
 

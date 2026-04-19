@@ -3,37 +3,72 @@ import {
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
 } from "@solana/kit";
 import {
-  getVaultErrorMessage,
-  VAULT_ERROR__VAULT_ALREADY_EXISTS,
-  VAULT_ERROR__INVALID_AMOUNT,
-  type VaultError,
-} from "../generated/vault";
+  getStatureErrorMessage,
+  STATURE_ERROR__ADMIN_ACTION_ONLY,
+  STATURE_ERROR__ALREADY_INITIALIZED,
+  STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE,
+  STATURE_ERROR__PROGRAM_NOT_VERIFIED,
+  STATURE_ERROR__PROGRAM_SUSPENDED,
+  STATURE_ERROR__INVALID_NONCE,
+  STATURE_ERROR__INVALID_RECORD,
+  STATURE_ERROR__RATE_LIMITED,
+  STATURE_ERROR__INVALID_WEIGHT,
+  STATURE_ERROR__OVERFLOW,
+  STATURE_ERROR__REQUEST_LIMIT_INCREASE,
+  STATURE_ERROR__STRING_TOO_LONG,
+  STATURE_ERROR__TOO_MANY_UPDATES,
+  STATURE_ERROR__TOO_MUCH,
+  STATURE_ERROR__USER_SUSPENDED,
+  // Removed old Vault imports and ensured Stature types are present
+  type StatureError,
+} from "../generated/stature";
 
-const VAULT_ERROR_CODES: Record<number, VaultError> = {
-  [VAULT_ERROR__VAULT_ALREADY_EXISTS]: VAULT_ERROR__VAULT_ALREADY_EXISTS,
-  [VAULT_ERROR__INVALID_AMOUNT]: VAULT_ERROR__INVALID_AMOUNT,
+/**
+ * Mapping of numeric error codes to StatureError types.
+ * This allows the parser to lookup the code returned by the SVM
+ * and match it to a human-readable message via getStatureErrorMessage.
+ */
+const STATURE_ERROR_CODES: Record<number, StatureError> = {
+  [STATURE_ERROR__ADMIN_ACTION_ONLY]: STATURE_ERROR__ADMIN_ACTION_ONLY,
+  [STATURE_ERROR__ALREADY_INITIALIZED]: STATURE_ERROR__ALREADY_INITIALIZED,
+  [STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE]:
+    STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE,
+  [STATURE_ERROR__PROGRAM_NOT_VERIFIED]: STATURE_ERROR__PROGRAM_NOT_VERIFIED,
+  [STATURE_ERROR__PROGRAM_SUSPENDED]: STATURE_ERROR__PROGRAM_SUSPENDED,
+  [STATURE_ERROR__INVALID_NONCE]: STATURE_ERROR__INVALID_NONCE,
+  [STATURE_ERROR__INVALID_RECORD]: STATURE_ERROR__INVALID_RECORD,
+  [STATURE_ERROR__RATE_LIMITED]: STATURE_ERROR__RATE_LIMITED,
+  [STATURE_ERROR__INVALID_WEIGHT]: STATURE_ERROR__INVALID_WEIGHT,
+  [STATURE_ERROR__OVERFLOW]: STATURE_ERROR__OVERFLOW,
+  [STATURE_ERROR__REQUEST_LIMIT_INCREASE]:
+    STATURE_ERROR__REQUEST_LIMIT_INCREASE,
+  [STATURE_ERROR__STRING_TOO_LONG]: STATURE_ERROR__STRING_TOO_LONG,
+  [STATURE_ERROR__TOO_MANY_UPDATES]: STATURE_ERROR__TOO_MANY_UPDATES,
+  [STATURE_ERROR__TOO_MUCH]: STATURE_ERROR__TOO_MUCH,
+  [STATURE_ERROR__USER_SUSPENDED]: STATURE_ERROR__USER_SUSPENDED,
 };
 
 export function parseTransactionError(err: unknown): string {
-  // Wallet rejection (comes from wallet-standard, not a SolanaError)
+  // 1. Handle UI/Wallet rejections
   if (err instanceof Error && err.message.includes("User rejected")) {
     return "Transaction was rejected by the wallet.";
   }
 
-  // Anchor custom program errors — use the Codama-generated error messages
+  // 2. Handle Stature Program Custom Errors
   if (
     isSolanaError(err, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM) &&
     typeof err.context?.code === "number"
   ) {
-    const vaultError = VAULT_ERROR_CODES[err.context.code];
-    if (vaultError !== undefined) {
-      return getVaultErrorMessage(vaultError);
+    const statureError = STATURE_ERROR_CODES[err.context.code];
+    if (statureError !== undefined) {
+      return getStatureErrorMessage(statureError);
     }
   }
 
-  // For all other errors, kit's SolanaError already has readable messages.
-  // Walk the cause chain to find the deepest message.
+  // 3. Fallback to deepest message in the cause chain
   const message = getDeepestMessage(err);
+
+  // Truncate overly long system errors for cleaner UI toasts
   return message.length > 200 ? `${message.slice(0, 200)}...` : message;
 }
 

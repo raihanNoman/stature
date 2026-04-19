@@ -81,9 +81,9 @@ pub mod stature {
 
     pub fn update_user_stature(
         ctx: Context<UpdateUserStatureCPI>,
-        amount: i64,
-        nonce: u64,
+        stature: i64,
+        memo: String,
     ) -> Result<()> {
-        instructions::update_stature::update_user_stature_via_cpi(ctx, amount, nonce)
+        instructions::update_stature::update_user_stature_via_cpi(ctx, stature, memo)
     }
 }

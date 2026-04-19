@@ -12,10 +12,14 @@ pub struct Config {
 #[derive(InitSpace, Debug)]
 pub struct StatureRecord {
     pub registered_program: Pubkey,
+    pub registered_program_source_account: Pubkey,
     pub user: Pubkey,
 
-    pub amount: i64,
+    pub stature: i64,
     pub timestamp: i64,
+
+    #[max_len(64)]
+    pub memo: String, // reason for this record // or a uuid like connection to data-base
 
     pub user_record_idx: u64,
     pub bump: u8,
@@ -25,7 +29,6 @@ pub struct StatureRecord {
 #[derive(InitSpace, Debug)]
 pub struct ProgramUserState {
     pub last_updated_at: i64,
-    pub last_nonce: u64,
     pub total_records: u64,
     // pub db_id: u64,  // make it string beacuse its uuid
     pub bump: u8,
@@ -47,8 +50,6 @@ pub struct User {
     pub bump: u8,
 }
 
-
-
 #[account]
 #[derive(InitSpace, Debug)]
 pub struct RegisteredProgram {
@@ -62,7 +63,7 @@ pub struct RegisteredProgram {
     pub total_positive_raw: i64,
     pub total_negative_raw: i64,
 
-    pub max_record_cap: u64, 
+    pub max_record_cap: u64,
     pub record_count: u64,
 
     pub weight: u8,

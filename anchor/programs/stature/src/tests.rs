@@ -91,13 +91,13 @@ mod tests {
         authority: &Pubkey, // The target program's key/PDA
         user_wallet: &Pubkey,
         source: &Pubkey,
-        amount: i64,
-        nonce: u64,
+        stature: i64,
+        memo: String,
     ) -> Instruction {
         let program_pda = get_registered_program_pda(authority);
         let user_pda = get_user_pda(user_wallet);
 
-        let data = crate::instruction::UpdateUserStature { amount, nonce }.data();
+        let data = crate::instruction::UpdateUserStature { stature, memo }.data();
         Instruction {
             program_id: PROGRAM_ID,
             accounts: vec![
@@ -207,7 +207,7 @@ mod tests {
             &user_wallet.pubkey(),
             &source_action.pubkey(),
             100,
-            1,
+            "example 64 bit uuid from data base".to_string(),
         );
         let tx = Transaction::new_signed_with_payer(
             &[ix],
@@ -252,7 +252,7 @@ mod tests {
             &user.pubkey(),
             &Pubkey::new_unique(),
             10,
-            1,
+            "example 64 bit uuid from data base".to_string(),
         );
         let tx = Transaction::new_signed_with_payer(
             &[ix],
