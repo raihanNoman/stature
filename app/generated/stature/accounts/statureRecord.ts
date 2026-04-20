@@ -25,6 +25,8 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -64,6 +66,7 @@ export type StatureRecord = {
   user: Address;
   stature: bigint;
   txValue: bigint;
+  weight: number;
   timestamp: bigint;
   memo: string;
   userRecordIdx: bigint;
@@ -76,6 +79,7 @@ export type StatureRecordArgs = {
   user: Address;
   stature: number | bigint;
   txValue: number | bigint;
+  weight: number;
   timestamp: number | bigint;
   memo: string;
   userRecordIdx: number | bigint;
@@ -92,6 +96,7 @@ export function getStatureRecordEncoder(): Encoder<StatureRecordArgs> {
       ["user", getAddressEncoder()],
       ["stature", getI64Encoder()],
       ["txValue", getI64Encoder()],
+      ["weight", getU16Encoder()],
       ["timestamp", getI64Encoder()],
       ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["userRecordIdx", getU64Encoder()],
@@ -110,6 +115,7 @@ export function getStatureRecordDecoder(): Decoder<StatureRecord> {
     ["user", getAddressDecoder()],
     ["stature", getI64Decoder()],
     ["txValue", getI64Decoder()],
+    ["weight", getU16Decoder()],
     ["timestamp", getI64Decoder()],
     ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["userRecordIdx", getU64Decoder()],
