@@ -1,32 +1,55 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_lang::system_program::{transfer, Transfer};
-use crate::state::{ProgramUserState, RegisteredProgram, User};
 pub use crate::program::Stature;
 
 pub const STATURE_UPDATE_FEE: u64 = 1_000_000;
 
 #[derive(Accounts)]
 pub struct StatureUpdateBundle<'info> {
-    #[account(mut)]
-    pub stature_user: Account<'info, User>,
-    #[account(mut)]
-    pub registered_program: Account<'info, RegisteredProgram>,
-    #[account(mut)]
-    pub program_user_state: Account<'info, ProgramUserState>,
-    #[account(mut)]
-    pub stature_record: Signer<'info>,
-  
+    /// CHECK: Expects a Stature User Account
+    pub stature_user: AccountInfo<'info>,
+    /// CHECK: Expects a RegisteredProgram Account
+    pub registered_program: AccountInfo<'info>,
+    /// CHECK: Expects a ProgramUserState Account
+    pub program_user_state: AccountInfo<'info>,
+    /// CHECK: Must be a Signer
+    pub stature_record: AccountInfo<'info>,
+    /// CHECK: The Stature Fee Vault
+    pub stature_vault: AccountInfo<'info>,
     /// CHECK: The Vault PDA receiving the protocol fee
-    #[account(
-        mut,
-        seeds = [b"stature_vault"],
-        bump 
-    )]
-    pub stature_vault: UncheckedAccount<'info>,
+    // #[account(
+    //     mut,
+    //     seeds = [b"stature_vault"],
+    //     bump
+    // )]
+    // pub stature_vault: UncheckedAccount<'info>,
     pub stature_program: Program<'info, Stature>,
     pub system_program: Program<'info, System>,
 }
+
+// use crate::state::{ProgramUserState, RegisteredProgram, User};
+
+// pub struct StatureUpdateBundle<'info> {
+//     #[account(mut)]
+//     pub stature_user: Account<'info, User>,
+//     #[account(mut)]
+//     pub registered_program: Account<'info, RegisteredProgram>,
+//     #[account(mut)]
+//     pub program_user_state: Account<'info, ProgramUserState>,
+//     #[account(mut)]
+//     pub stature_record: Signer<'info>,
+  
+//     /// CHECK: The Vault PDA receiving the protocol fee
+//     #[account(
+//         mut,
+//         seeds = [b"stature_vault"],
+//         bump 
+//     )]
+//     pub stature_vault: UncheckedAccount<'info>,
+//     pub stature_program: Program<'info, Stature>,
+//     pub system_program: Program<'info, System>,
+// }
 
 pub fn invoke_stature_update<'info>(
     bundle: &StatureUpdateBundle<'info>,
@@ -91,4 +114,26 @@ pub fn invoke_stature_update<'info>(
     )?;
 
     Ok(())
+}
+
+
+// The "Interface" definition
+pub trait StatureInterface<'info> {
+    fn get_bundle(&self) -> StatureUpdateBundle<'info>;
+    fn get_payer(&self) -> AccountInfo<'info>;
+}
+
+// Update the helper to accept ANY type that implements your interface
+pub fn invoke_stature_with_interface<'info, T: StatureInterface<'info>>(
+    ctx_struct: &T,
+    target_program: AccountInfo<'info>,
+    source_account: AccountInfo<'info>,
+    tx_value: i64,
+    memo: String,
+) -> Result<()> {
+    let bundle = ctx_struct.get_bundle();
+    let payer = ctx_struct.get_payer();
+
+    // Call your existing invoke logic
+    invoke_stature_update(&bundle, payer, target_program, source_account, tx_value, memo)
 }

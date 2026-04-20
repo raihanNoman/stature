@@ -1,4 +1,3 @@
-use crate::constants::ANCHOR_DISCRIMINATOR;
 use crate::error::ErrorCode;
 use crate::state::Config;
 
