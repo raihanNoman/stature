@@ -37,12 +37,9 @@ mod tests;
 
 declare_id!("9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb");
 
-
 #[program]
 pub mod stature {
     use super::*;
-
-
 
     // amins management
     pub fn create_admin(ctx: Context<InitConfig>) -> Result<()> {
@@ -96,9 +93,4 @@ pub mod stature {
     ) -> Result<()> {
         instructions::update_stature::update_user_stature_via_cpi(ctx, tx_value_lamports, memo)
     }
-}
-
-
-pub mod cpi {
-    pub use crate::stature::*;
 }

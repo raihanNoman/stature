@@ -18,6 +18,14 @@ pub struct InitConfig<'info> {
     )]
     pub config: Account<'info, Config>,
 
+    /// CHECK: This is the PDA that will hold the SOL fees.
+    /// It doesn't hold data, so we don't 'init' it, just derive it.
+    #[account(
+        seeds = [b"stature_vault"],
+        bump
+    )]
+    pub stature_vault: SystemAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 

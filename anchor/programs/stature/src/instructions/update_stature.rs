@@ -113,21 +113,6 @@ pub fn update_user_stature_via_cpi(
     // 1. Logic Guards
     require!(!user.is_suspended, ErrorCode::UserSuspended);
 
-    // 2. Calculation Logic (Weighted by Program Authority)
-    // let weight_multiplier = registered_program.weight as i64;
-    // let weighted_stature = tx_value_lamports
-    //     .checked_mul(weight_multiplier)
-    //     .ok_or(ErrorCode::Overflow)?;
-
-    // Anti-inflation scaling
-    // let value = user.stature.abs() as u64 + 1;
-    // let scale = (64 - value.leading_zeros()) as i64;
-
-
-    // let adjusted_stature = weighted_stature
-    //     .checked_div(scale.max(1))
-    //     .ok_or(ErrorCode::Overflow)?;
-
     let adjusted_stature = calculate_stature_gain(
         tx_value_lamports,
         registered_program.weight,
