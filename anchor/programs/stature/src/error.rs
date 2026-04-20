@@ -2,6 +2,9 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum ErrorCode {
+    #[msg("Insufficient funds. Cannot withdraw from stature vault")]
+    InsufficientFunds,
+
     #[msg("Arithmetic overflow while updating values")]
     Overflow,
 

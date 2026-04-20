@@ -8,6 +8,9 @@ pub use instructions::*;
 pub mod state;
 pub use state::*;
 
+pub mod stature_cpi; // This "activates" the file
+pub use stature_cpi::*; // This makes the helper functions accessible
+
 #[cfg(test)]
 mod tests;
 
@@ -34,13 +37,20 @@ mod tests;
 
 declare_id!("9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb");
 
+
 #[program]
 pub mod stature {
     use super::*;
 
+
+
     // amins management
     pub fn create_admin(ctx: Context<InitConfig>) -> Result<()> {
         instructions::register_admin::init_config(ctx)
+    }
+
+    pub fn withdraw_funds(ctx: Context<WithdrawFees>, amount: u64) -> Result<()> {
+        instructions::withdraw::withdraw_fees(ctx, amount)
     }
 
     pub fn create_program(ctx: Context<RegisterProgram>, name: String) -> Result<()> {
@@ -86,4 +96,9 @@ pub mod stature {
     ) -> Result<()> {
         instructions::update_stature::update_user_stature_via_cpi(ctx, tx_value_lamports, memo)
     }
+}
+
+
+pub mod cpi {
+    pub use crate::stature::*;
 }

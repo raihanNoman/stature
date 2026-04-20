@@ -6,12 +6,12 @@ edition = "2021"
 
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib", "lib"] # "lib" allows other programs to import it
 name = "stature"
 
 [features]
 default = []
-cpi = ["no-entrypoint"]
+cpi = ["no-entrypoint"] # When contract282 imports this, it uses "cpi"
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []

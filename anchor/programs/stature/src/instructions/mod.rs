@@ -7,6 +7,10 @@ pub use register_program::*;
 pub mod register_user;
 pub use register_user::*;
 
+pub mod withdraw;
+pub use withdraw::*;
+
+
 pub mod manage_admin;
 pub use manage_admin::*;
 
@@ -19,6 +23,5 @@ pub use manage_program::*;
 pub mod update_stature;
 pub use update_stature::*;
 
-
-pub  mod calculate_stature_gain;
+pub mod calculate_stature_gain;
 pub use calculate_stature_gain::*;
