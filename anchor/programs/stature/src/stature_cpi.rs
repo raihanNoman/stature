@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_lang::system_program::{transfer, Transfer};
-use crate::StatureUser;
+use crate::state::{StatureUser, RegisteredProgram, StatureRecord, ProgramUserState};
 pub use crate::program::Stature;
 
 pub const STATURE_UPDATE_FEE: u64 = 1_000_000;
@@ -11,11 +11,11 @@ pub struct StatureUpdateBundle<'info> {
     /// CHECK: Expects a Stature User Account
     pub stature_user: Account<'info, StatureUser>, //
     /// CHECK: Expects a RegisteredProgram Account
-    pub registered_program: AccountInfo<'info>,
+    pub registered_program: Account<'info, RegisteredProgram>,
     /// CHECK: Expects a ProgramUserState Account
-    pub program_user_state: AccountInfo<'info>,
+    pub program_user_state: Account<'info, ProgramUserState>,
     /// CHECK: Must be a Signer
-    pub stature_record: AccountInfo<'info>,
+    pub stature_record: Account<'info, StatureRecord>,
     /// CHECK: The Stature Fee Vault
     pub stature_vault: AccountInfo<'info>,
     /// CHECK: The Vault PDA receiving the protocol fee
