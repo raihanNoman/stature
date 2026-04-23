@@ -28,6 +28,7 @@ import {
   parseUpdateProgramWeightInstruction,
   parseUpdateUserStatureInstruction,
   parseUpdateUserSuspensionInstruction,
+  parseWithdrawFundsInstruction,
   type ParsedCreateAdminInstruction,
   type ParsedCreateProgramInstruction,
   type ParsedCreateUserInstruction,
@@ -39,6 +40,7 @@ import {
   type ParsedUpdateProgramWeightInstruction,
   type ParsedUpdateUserStatureInstruction,
   type ParsedUpdateUserSuspensionInstruction,
+  type ParsedWithdrawFundsInstruction,
 } from "../instructions";
 
 export const STATURE_PROGRAM_ADDRESS =
@@ -128,6 +130,7 @@ export enum StatureInstruction {
   UpdateProgramWeight,
   UpdateUserStature,
   UpdateUserSuspension,
+  WithdrawFunds,
 }
 
 export function identifyStatureInstruction(
@@ -255,6 +258,17 @@ export function identifyStatureInstruction(
   ) {
     return StatureInstruction.UpdateUserSuspension;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([241, 36, 29, 111, 208, 31, 104, 217]),
+      ),
+      0,
+    )
+  ) {
+    return StatureInstruction.WithdrawFunds;
+  }
   throw new Error(
     "The provided instruction could not be identified as a stature instruction.",
   );
@@ -295,7 +309,10 @@ export type ParsedStatureInstruction<
     } & ParsedUpdateUserStatureInstruction<TProgram>)
   | ({
       instructionType: StatureInstruction.UpdateUserSuspension;
-    } & ParsedUpdateUserSuspensionInstruction<TProgram>);
+    } & ParsedUpdateUserSuspensionInstruction<TProgram>)
+  | ({
+      instructionType: StatureInstruction.WithdrawFunds;
+    } & ParsedWithdrawFundsInstruction<TProgram>);
 
 export function parseStatureInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -377,6 +394,13 @@ export function parseStatureInstruction<TProgram extends string>(
       return {
         instructionType: StatureInstruction.UpdateUserSuspension,
         ...parseUpdateUserSuspensionInstruction(instruction),
+      };
+    }
+    case StatureInstruction.WithdrawFunds: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: StatureInstruction.WithdrawFunds,
+        ...parseWithdrawFundsInstruction(instruction),
       };
     }
     default:

@@ -14,6 +14,8 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU64Decoder,
+  getU64Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -34,17 +36,17 @@ import { findConfigPda, findStatureVaultPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
 
-export const CREATE_ADMIN_DISCRIMINATOR = new Uint8Array([
-  235, 218, 207, 161, 38, 135, 223, 48,
+export const WITHDRAW_FUNDS_DISCRIMINATOR = new Uint8Array([
+  241, 36, 29, 111, 208, 31, 104, 217,
 ]);
 
-export function getCreateAdminDiscriminatorBytes() {
+export function getWithdrawFundsDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CREATE_ADMIN_DISCRIMINATOR,
+    WITHDRAW_FUNDS_DISCRIMINATOR,
   );
 }
 
-export type CreateAdminInstruction<
+export type WithdrawFundsInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountConfig extends string | AccountMeta<string> = string,
@@ -61,10 +63,10 @@ export type CreateAdminInstruction<
             AccountSignerMeta<TAccountAdmin>
         : TAccountAdmin,
       TAccountConfig extends string
-        ? WritableAccount<TAccountConfig>
+        ? ReadonlyAccount<TAccountConfig>
         : TAccountConfig,
       TAccountStatureVault extends string
-        ? ReadonlyAccount<TAccountStatureVault>
+        ? WritableAccount<TAccountStatureVault>
         : TAccountStatureVault,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
@@ -73,34 +75,41 @@ export type CreateAdminInstruction<
     ]
   >;
 
-export type CreateAdminInstructionData = { discriminator: ReadonlyUint8Array };
+export type WithdrawFundsInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  amount: bigint;
+};
 
-export type CreateAdminInstructionDataArgs = {};
+export type WithdrawFundsInstructionDataArgs = { amount: number | bigint };
 
-export function getCreateAdminInstructionDataEncoder(): FixedSizeEncoder<CreateAdminInstructionDataArgs> {
+export function getWithdrawFundsInstructionDataEncoder(): FixedSizeEncoder<WithdrawFundsInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: CREATE_ADMIN_DISCRIMINATOR }),
+    getStructEncoder([
+      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["amount", getU64Encoder()],
+    ]),
+    (value) => ({ ...value, discriminator: WITHDRAW_FUNDS_DISCRIMINATOR }),
   );
 }
 
-export function getCreateAdminInstructionDataDecoder(): FixedSizeDecoder<CreateAdminInstructionData> {
+export function getWithdrawFundsInstructionDataDecoder(): FixedSizeDecoder<WithdrawFundsInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["amount", getU64Decoder()],
   ]);
 }
 
-export function getCreateAdminInstructionDataCodec(): FixedSizeCodec<
-  CreateAdminInstructionDataArgs,
-  CreateAdminInstructionData
+export function getWithdrawFundsInstructionDataCodec(): FixedSizeCodec<
+  WithdrawFundsInstructionDataArgs,
+  WithdrawFundsInstructionData
 > {
   return combineCodec(
-    getCreateAdminInstructionDataEncoder(),
-    getCreateAdminInstructionDataDecoder(),
+    getWithdrawFundsInstructionDataEncoder(),
+    getWithdrawFundsInstructionDataDecoder(),
   );
 }
 
-export type CreateAdminAsyncInput<
+export type WithdrawFundsAsyncInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
   TAccountStatureVault extends string = string,
@@ -108,19 +117,19 @@ export type CreateAdminAsyncInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config?: Address<TAccountConfig>;
-  /** It doesn't hold data, so we don't 'init' it, just derive it. */
   statureVault?: Address<TAccountStatureVault>;
   systemProgram?: Address<TAccountSystemProgram>;
+  amount: WithdrawFundsInstructionDataArgs["amount"];
 };
 
-export async function getCreateAdminInstructionAsync<
+export async function getWithdrawFundsInstructionAsync<
   TAccountAdmin extends string,
   TAccountConfig extends string,
   TAccountStatureVault extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: CreateAdminAsyncInput<
+  input: WithdrawFundsAsyncInput<
     TAccountAdmin,
     TAccountConfig,
     TAccountStatureVault,
@@ -128,7 +137,7 @@ export async function getCreateAdminInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  CreateAdminInstruction<
+  WithdrawFundsInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
@@ -142,14 +151,17 @@ export async function getCreateAdminInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
-    statureVault: { value: input.statureVault ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    statureVault: { value: input.statureVault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.config.value) {
@@ -171,9 +183,11 @@ export async function getCreateAdminInstructionAsync<
       getAccountMeta(accounts.statureVault),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCreateAdminInstructionDataEncoder().encode({}),
+    data: getWithdrawFundsInstructionDataEncoder().encode(
+      args as WithdrawFundsInstructionDataArgs,
+    ),
     programAddress,
-  } as CreateAdminInstruction<
+  } as WithdrawFundsInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
@@ -182,7 +196,7 @@ export async function getCreateAdminInstructionAsync<
   >);
 }
 
-export type CreateAdminInput<
+export type WithdrawFundsInput<
   TAccountAdmin extends string = string,
   TAccountConfig extends string = string,
   TAccountStatureVault extends string = string,
@@ -190,26 +204,26 @@ export type CreateAdminInput<
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   config: Address<TAccountConfig>;
-  /** It doesn't hold data, so we don't 'init' it, just derive it. */
   statureVault: Address<TAccountStatureVault>;
   systemProgram?: Address<TAccountSystemProgram>;
+  amount: WithdrawFundsInstructionDataArgs["amount"];
 };
 
-export function getCreateAdminInstruction<
+export function getWithdrawFundsInstruction<
   TAccountAdmin extends string,
   TAccountConfig extends string,
   TAccountStatureVault extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: CreateAdminInput<
+  input: WithdrawFundsInput<
     TAccountAdmin,
     TAccountConfig,
     TAccountStatureVault,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): CreateAdminInstruction<
+): WithdrawFundsInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountConfig,
@@ -222,14 +236,17 @@ export function getCreateAdminInstruction<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
-    statureVault: { value: input.statureVault ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    statureVault: { value: input.statureVault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -245,9 +262,11 @@ export function getCreateAdminInstruction<
       getAccountMeta(accounts.statureVault),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCreateAdminInstructionDataEncoder().encode({}),
+    data: getWithdrawFundsInstructionDataEncoder().encode(
+      args as WithdrawFundsInstructionDataArgs,
+    ),
     programAddress,
-  } as CreateAdminInstruction<
+  } as WithdrawFundsInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountConfig,
@@ -256,7 +275,7 @@ export function getCreateAdminInstruction<
   >);
 }
 
-export type ParsedCreateAdminInstruction<
+export type ParsedWithdrawFundsInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -264,21 +283,20 @@ export type ParsedCreateAdminInstruction<
   accounts: {
     admin: TAccountMetas[0];
     config: TAccountMetas[1];
-    /** It doesn't hold data, so we don't 'init' it, just derive it. */
     statureVault: TAccountMetas[2];
     systemProgram: TAccountMetas[3];
   };
-  data: CreateAdminInstructionData;
+  data: WithdrawFundsInstructionData;
 };
 
-export function parseCreateAdminInstruction<
+export function parseWithdrawFundsInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedCreateAdminInstruction<TProgram, TAccountMetas> {
+): ParsedWithdrawFundsInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -297,6 +315,6 @@ export function parseCreateAdminInstruction<
       statureVault: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCreateAdminInstructionDataDecoder().decode(instruction.data),
+    data: getWithdrawFundsInstructionDataDecoder().decode(instruction.data),
   };
 }

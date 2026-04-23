@@ -10,5 +10,6 @@ export * from "./config";
 export * from "./programUserState";
 export * from "./record";
 export * from "./registeredProgram";
+export * from "./statureVault";
 export * from "./updateUserStatureUser";
 export * from "./user";

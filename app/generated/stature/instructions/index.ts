@@ -17,3 +17,4 @@ export * from "./updateProgramVerifiedStatus";
 export * from "./updateProgramWeight";
 export * from "./updateUserStature";
 export * from "./updateUserSuspension";
+export * from "./withdrawFunds";

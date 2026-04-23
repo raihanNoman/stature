@@ -14,41 +14,44 @@ import {
 } from "@solana/kit";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 
+/** InsufficientFunds: Insufficient funds. Cannot withdraw from stature vault */
+export const STATURE_ERROR__INSUFFICIENT_FUNDS = 0x1770; // 6000
 /** Overflow: Arithmetic overflow while updating values */
-export const STATURE_ERROR__OVERFLOW = 0x1770; // 6000
+export const STATURE_ERROR__OVERFLOW = 0x1771; // 6001
 /** ProgramSuspended: Registered Program is suspended and cannot perform this action */
-export const STATURE_ERROR__PROGRAM_SUSPENDED = 0x1771; // 6001
+export const STATURE_ERROR__PROGRAM_SUSPENDED = 0x1772; // 6002
 /** ProgramNotVerified: Registered Program must be verified before updating user stature */
-export const STATURE_ERROR__PROGRAM_NOT_VERIFIED = 0x1772; // 6002
+export const STATURE_ERROR__PROGRAM_NOT_VERIFIED = 0x1773; // 6003
 /** UserSuspended: User is suspended and cannot receive updates */
-export const STATURE_ERROR__USER_SUSPENDED = 0x1773; // 6003
+export const STATURE_ERROR__USER_SUSPENDED = 0x1774; // 6004
 /** InvalidWeight: Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required */
-export const STATURE_ERROR__INVALID_WEIGHT = 0x1774; // 6004
+export const STATURE_ERROR__INVALID_WEIGHT = 0x1775; // 6005
 /** InvalidSourceOwner: The source account must be owned by the registered program */
-export const STATURE_ERROR__INVALID_SOURCE_OWNER = 0x1775; // 6005
+export const STATURE_ERROR__INVALID_SOURCE_OWNER = 0x1776; // 6006
 /** RateLimited: Rate limit exceeded: please wait before updating this user again */
-export const STATURE_ERROR__RATE_LIMITED = 0x1776; // 6006
+export const STATURE_ERROR__RATE_LIMITED = 0x1777; // 6007
 /** InvalidRecord: Invalid or malformed stature record */
-export const STATURE_ERROR__INVALID_RECORD = 0x1777; // 6007
+export const STATURE_ERROR__INVALID_RECORD = 0x1778; // 6008
 /** AdminActionOnly: Unauthorized: only the program admin can perform this action */
-export const STATURE_ERROR__ADMIN_ACTION_ONLY = 0x1778; // 6008
+export const STATURE_ERROR__ADMIN_ACTION_ONLY = 0x1779; // 6009
 /** RequestLimitIncrease: Registered Program has reached its update limit; request a cap increase from admin */
-export const STATURE_ERROR__REQUEST_LIMIT_INCREASE = 0x1779; // 6009
+export const STATURE_ERROR__REQUEST_LIMIT_INCREASE = 0x177a; // 6010
 /** TooMuch: Stature update amount exceeds allowed bounds */
-export const STATURE_ERROR__TOO_MUCH = 0x177a; // 6010
+export const STATURE_ERROR__TOO_MUCH = 0x177b; // 6011
 /** StringTooLong: Input string is too long. Use a shorter name. */
-export const STATURE_ERROR__STRING_TOO_LONG = 0x177b; // 6011
+export const STATURE_ERROR__STRING_TOO_LONG = 0x177c; // 6012
 /** CannotSelfAssignStature: Cannot assign stature to yourself via your Registered Program */
-export const STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE = 0x177c; // 6012
+export const STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE = 0x177d; // 6013
 /** AlreadyInitialized: Cannot re-initialize account after already intialized once */
-export const STATURE_ERROR__ALREADY_INITIALIZED = 0x177d; // 6013
+export const STATURE_ERROR__ALREADY_INITIALIZED = 0x177e; // 6014
 /** TooManyUpdates: Reached company to user stature update hard cap */
-export const STATURE_ERROR__TOO_MANY_UPDATES = 0x177e; // 6014
+export const STATURE_ERROR__TOO_MANY_UPDATES = 0x177f; // 6015
 
 export type StatureError =
   | typeof STATURE_ERROR__ADMIN_ACTION_ONLY
   | typeof STATURE_ERROR__ALREADY_INITIALIZED
   | typeof STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE
+  | typeof STATURE_ERROR__INSUFFICIENT_FUNDS
   | typeof STATURE_ERROR__INVALID_RECORD
   | typeof STATURE_ERROR__INVALID_SOURCE_OWNER
   | typeof STATURE_ERROR__INVALID_WEIGHT
@@ -68,6 +71,7 @@ if (process.env.NODE_ENV !== "production") {
     [STATURE_ERROR__ADMIN_ACTION_ONLY]: `Unauthorized: only the program admin can perform this action`,
     [STATURE_ERROR__ALREADY_INITIALIZED]: `Cannot re-initialize account after already intialized once`,
     [STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE]: `Cannot assign stature to yourself via your Registered Program`,
+    [STATURE_ERROR__INSUFFICIENT_FUNDS]: `Insufficient funds. Cannot withdraw from stature vault`,
     [STATURE_ERROR__INVALID_RECORD]: `Invalid or malformed stature record`,
     [STATURE_ERROR__INVALID_SOURCE_OWNER]: `The source account must be owned by the registered program`,
     [STATURE_ERROR__INVALID_WEIGHT]: `Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required`,
