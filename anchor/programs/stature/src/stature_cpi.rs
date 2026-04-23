@@ -9,7 +9,7 @@ pub const STATURE_UPDATE_FEE: u64 = 1_000_000;
 #[derive(Accounts)]
 pub struct StatureUpdateBundle<'info> {
     /// CHECK: Expects a Stature User Account
-    pub stature_user: Account<'info, StatureUser>,
+    pub stature_user: Account<'info, StatureUser>, //
     /// CHECK: Expects a RegisteredProgram Account
     pub registered_program: AccountInfo<'info>,
     /// CHECK: Expects a ProgramUserState Account
