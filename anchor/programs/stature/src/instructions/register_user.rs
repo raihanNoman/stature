@@ -1,6 +1,6 @@
 use crate::constants::ANCHOR_DISCRIMINATOR;
 use crate::error::ErrorCode;
-use crate::User;
+use crate::StatureUser;
 
 use anchor_lang::prelude::*;
 
@@ -12,11 +12,11 @@ pub struct RegisterUser<'info> {
     #[account(
         init,
         payer = owner,
-        space = ANCHOR_DISCRIMINATOR + User::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR + StatureUser::INIT_SPACE,
         seeds = [b"user", owner.key().as_ref()],
         bump
     )]
-    pub user: Account<'info, User>,
+    pub user: Account<'info, StatureUser>,
 
     pub system_program: Program<'info, System>,
 }

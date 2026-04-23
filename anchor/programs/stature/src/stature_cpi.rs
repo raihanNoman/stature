@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_lang::system_program::{transfer, Transfer};
+use crate::StatureUser;
 pub use crate::program::Stature;
 
 pub const STATURE_UPDATE_FEE: u64 = 1_000_000;
@@ -8,7 +9,7 @@ pub const STATURE_UPDATE_FEE: u64 = 1_000_000;
 #[derive(Accounts)]
 pub struct StatureUpdateBundle<'info> {
     /// CHECK: Expects a Stature User Account
-    pub stature_user: AccountInfo<'info>,
+    pub stature_user: Account<'info, StatureUser>,
     /// CHECK: Expects a RegisteredProgram Account
     pub registered_program: AccountInfo<'info>,
     /// CHECK: Expects a ProgramUserState Account
@@ -28,11 +29,11 @@ pub struct StatureUpdateBundle<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// use crate::state::{ProgramUserState, RegisteredProgram, User};
+// use crate::state::{ProgramUserState, RegisteredProgram, StatureUser};
 
 // pub struct StatureUpdateBundle<'info> {
 //     #[account(mut)]
-//     pub stature_user: Account<'info, User>,
+//     pub stature_user: Account<'info, StatureUser>,
 //     #[account(mut)]
 //     pub registered_program: Account<'info, RegisteredProgram>,
 //     #[account(mut)]

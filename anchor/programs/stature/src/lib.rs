@@ -86,6 +86,7 @@ pub mod stature {
         instructions::manage_user::manage_user_suspension(ctx, is_suspended)
     }
 
+
     pub fn update_user_stature(
         ctx: Context<UpdateUserStatureCPI>,
         tx_value_lamports: i64,

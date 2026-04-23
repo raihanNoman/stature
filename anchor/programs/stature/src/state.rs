@@ -39,7 +39,7 @@ pub struct ProgramUserState {
 
 #[account]
 #[derive(InitSpace, Debug)]
-pub struct User {
+pub struct StatureUser {
     pub wallet: Pubkey, // 32
     #[max_len(32)]
     pub name: String, // 4 + 32

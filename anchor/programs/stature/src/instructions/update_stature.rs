@@ -1,7 +1,7 @@
 use crate::calculate_stature_gain;
 use crate::constants::{ANCHOR_DISCRIMINATOR};
 use crate::error::ErrorCode;
-use crate::state::{ ProgramUserState, RegisteredProgram, StatureRecord, User};
+use crate::state::{ ProgramUserState, RegisteredProgram, StatureRecord, StatureUser};
 
 use anchor_lang::prelude::*;
 
@@ -32,11 +32,11 @@ pub struct UpdateUserStatureCPI<'info> {
     #[account(
         init_if_needed, 
         payer = payer,
-        space = ANCHOR_DISCRIMINATOR + User::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR + StatureUser::INIT_SPACE,
         seeds = [b"user", user_wallet.key().as_ref()], 
         bump,
     )]
-    pub user: Account<'info, User>,
+    pub user: Account<'info, StatureUser>,
 
 
     /// CHECK: Validated in instruction logic //? add contraints ?

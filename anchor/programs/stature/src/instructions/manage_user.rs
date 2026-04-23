@@ -1,5 +1,5 @@
 use crate::error::ErrorCode;
-use crate::state::{Config, User};
+use crate::state::{Config, StatureUser};
 
 use anchor_lang::prelude::*;
 
@@ -20,7 +20,7 @@ pub struct ManageUser<'info> {
         seeds = [b"user", user.wallet.as_ref()], 
         bump = user.bump
     )]
-    pub user: Account<'info, User>,
+    pub user: Account<'info, StatureUser>,
 }
 
 

@@ -220,7 +220,7 @@ mod tests {
         // 5. Verification
         let user_pda = get_user_pda(&user_wallet.pubkey());
         let user_acc = svm.get_account(&user_pda).unwrap();
-        let user_data: User = User::try_deserialize(&mut &user_acc.data[..]).unwrap();
+        let user_data: StatureUser = StatureUser::try_deserialize(&mut &user_acc.data[..]).unwrap();
 
         assert!(user_data.stature > 0);
         assert_eq!(user_data.wallet.to_bytes(), user_wallet.pubkey().to_bytes());
