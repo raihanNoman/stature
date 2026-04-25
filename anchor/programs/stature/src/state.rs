@@ -58,8 +58,10 @@ pub struct StatureUser {
 
 #[account]
 #[derive(InitSpace, Debug)]
-pub struct RegisteredProgram {
-    pub program_id: Pubkey,
+pub struct RegisteredProgram { 
+    pub target_program: Pubkey,
+    pub authority: Pubkey,
+
     pub approved_by: Pubkey, // The Stature Admin who approved this program
 
     #[max_len(32)]

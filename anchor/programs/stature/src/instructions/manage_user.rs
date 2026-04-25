@@ -17,7 +17,7 @@ pub struct ManageUser<'info> {
 
     #[account(
         mut, 
-        seeds = [b"user", user.wallet.as_ref()], 
+        seeds = [b"user", user.wallet.key().as_ref()], 
         bump = user.bump
     )]
     pub user: Account<'info, StatureUser>,

@@ -11,7 +11,7 @@ name = "stature"
 
 [features]
 default = []
-cpi = ["no-entrypoint"] # When contract282 imports this, it uses "cpi"
+cpi = ["no-entrypoint"]               # When contract282 imports this, it uses "cpi"
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
@@ -21,19 +21,30 @@ custom-panic = []
 anchor-debug = []
 
 
-
 # [lints.rust]
 # unexpected_cfgs = { level = "warn", check-cfg = [
 #     'cfg(target_os, values("solana"))',
 #     'cfg(feature, values("anchor-debug", "custom-heap", "custom-panic"))',
 # ] }
+
+
 [dependencies]
-anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+# anchor-lang = { workspace = true }
+anchor-lang = { version = "1.0.1", features = ["init-if-needed", "event-cpi"] }
+
 
 [dev-dependencies]
 # Force everything to the 3.0.x branch to match your solana-cli 3.1
-solana-sdk = "=3.0.0"
-solana-program-pack = "=3.0.0"
-solana-system-interface = "=3.0.0"
+# solana-program-pack = "=3.0.0"
+# solana-system-interface = "=3.0.0"
 # If litesvm is causing the bloat, try updating it or temporary commenting it out
-litesvm = "0.9.1"
+
+anchor-litesvm = "0.4.0"
+litesvm = "0.11.0"
+litesvm-utils = "0.4.0"
+solana-sdk = "3.0.0"
+# solana-program = "=3.1.12"
+# solana-account = "4.3.0"
+
+# [patch.crates-io]
+# solana-account = "=4.3.0"

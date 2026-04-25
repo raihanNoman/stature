@@ -22,6 +22,8 @@ pub struct ManageProgram<'info> {
         mut, 
         seeds = [b"registered_program", target_program.key().as_ref()], 
         bump = registered_program.bump, 
+        // Safety: Ensure we are managing the correct program
+        constraint = registered_program.target_program == target_program.key() @ ErrorCode::MismatchedTargetProgram
     )]
     pub registered_program: Account<'info, RegisteredProgram>,
 }
@@ -67,6 +69,10 @@ pub fn manage_program_record_cap(
 
 pub fn manage_program_verified_status(ctx: Context<ManageProgram>) -> Result<()> {
     let registered_program = &mut ctx.accounts.registered_program;
+
+    // Optional: Only allow verification if not already verified
+    require!(!registered_program.is_verified, ErrorCode::AlreadyVerified);
+
     registered_program.is_verified = true;
     registered_program.approved_by = ctx.accounts.admin.key();// The admin who verifies it becomes the recorded admin for this registered_program
 

@@ -2,6 +2,14 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum ErrorCode {
+    #[msg("Only the original program PDA can change stature for their user.")]
+    Unauthorized,
+    #[msg("Program was already verified by a previous admin")]
+    AlreadyVerified,
+
+    #[msg("Program is in bad standing. Only programs with stature above 0 can update stature for its users")]
+    ProgramInBadStanding,
+
     #[msg("Insufficient funds. Cannot withdraw from stature vault")]
     InsufficientFunds,
 
@@ -19,6 +27,9 @@ pub enum ErrorCode {
 
     #[msg("Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required")]
     InvalidWeight,
+
+    #[msg("Target Program was registered by a malicious attacker: Possible program squator")]
+    MismatchedTargetProgram,
 
     #[msg("The source account must be owned by the registered program")]
     InvalidSourceOwner,

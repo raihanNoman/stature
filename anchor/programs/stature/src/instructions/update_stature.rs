@@ -10,7 +10,7 @@ pub struct UpdateUserStatureCPI<'info> {
     /// The program calling this MUST sign/authorize via its PDA or specific key
     /// In a Program-to-Program model, this is usually a PDA from the calling program
     #[account(mut)] // <--- ADD THIS LINE
-    pub payer: Signer<'info>, // Can be the User OR the Program PDA
+    pub signer: Signer<'info>, // Can be the User OR the Program PDA
 
 
     /// CHECK: This is the address we use to derive the PDA seeds
@@ -19,10 +19,11 @@ pub struct UpdateUserStatureCPI<'info> {
     #[account(
         mut,
         seeds = [b"registered_program", target_program.key().as_ref()],
-        owner = target_program.key() @ ErrorCode::InvalidSourceOwner, 
         bump = registered_program.bump,
         constraint = !registered_program.is_suspended@ ErrorCode::ProgramSuspended, 
         constraint = registered_program.is_verified @ ErrorCode::ProgramNotVerified,
+        constraint = registered_program.stature > 0 @ ErrorCode::ProgramInBadStanding,
+        constraint = registered_program.target_program == target_program.key()
     )]
     pub registered_program: Account<'info, RegisteredProgram>,
 
@@ -31,7 +32,7 @@ pub struct UpdateUserStatureCPI<'info> {
 
     #[account(
         init_if_needed, 
-        payer = payer,
+        payer = signer,
         space = ANCHOR_DISCRIMINATOR + StatureUser::INIT_SPACE,
         seeds = [b"user", user_wallet.key().as_ref()], 
         bump,
@@ -40,12 +41,16 @@ pub struct UpdateUserStatureCPI<'info> {
 
 
     /// CHECK: Validated in instruction logic //? add contraints ?
-    #[account(mut)]
+    #[account(
+        mut, 
+        //owner = target_program.key() @ ErrorCode::InvalidSourceOwner, 
+        constraint = registered_program_source_account.owner.key() == registered_program.target_program@ ErrorCode::InvalidSourceOwner, 
+    )]
     pub registered_program_source_account: UncheckedAccount<'info>, // ! unchecked account 
 
     #[account(
         init_if_needed,
-        payer = payer,
+        payer = signer,
         space = ANCHOR_DISCRIMINATOR + ProgramUserState::INIT_SPACE,
         seeds = [b"state", registered_program.key().as_ref(), user_wallet.key().as_ref()], // increase count for number of items from that 
         bump
@@ -54,7 +59,7 @@ pub struct UpdateUserStatureCPI<'info> {
 
     #[account(
         init,
-        payer = payer,
+        payer = signer,
         space = ANCHOR_DISCRIMINATOR + StatureRecord::INIT_SPACE,
         seeds = [
             b"record", 
@@ -77,20 +82,42 @@ pub fn update_user_stature_via_cpi(
     memo: String, 
 ) -> Result<()> {
     let now: i64 =  Clock::get()?.unix_timestamp;
+
+    // 1. Better Authority Check
+    // We allow the registered authority OR the target_program itself to sign
+
+
+
     let registered_program = &mut ctx.accounts.registered_program;
     let user = &mut ctx.accounts.user;
     let source_account =  &mut ctx.accounts.registered_program_source_account;
     let record = &mut ctx.accounts.record;
     let program_user_state = &mut ctx.accounts.program_user_state;
 
- 
 
-    if program_user_state.total_records == 0 {
+    require!(memo.len() <= 64, ErrorCode::StringTooLong);
+
+    let is_authorized = ctx.accounts.signer.key() == registered_program.authority;
+    require!(is_authorized, ErrorCode::Unauthorized);
+
+
+    require_keys_eq!(
+        source_account.owner.key(), 
+        registered_program.target_program, 
+        ErrorCode::InvalidSourceOwner
+    );
+
+// Rate Limiting Logic (Handles first-time and 3-hour cool-down)
+    if program_user_state.total_records > 0 {
+        let three_hours = 10800; // 3 * 60 * 60
+        let elapsed = now.checked_sub(program_user_state.last_updated_at).ok_or(ErrorCode::Overflow)?;
+        require!(elapsed >= three_hours, ErrorCode::RateLimited);
+    } else {
+        // First time this user hits this program
         program_user_state.first_action_at = now;
     }
 
-
-    if user.wallet == Pubkey::default() {
+    if user.since == 0 {
         let mut name = format!("new {} user", registered_program.name);
 
         if name.len() > 32 {
@@ -102,13 +129,11 @@ pub fn update_user_stature_via_cpi(
         user.stature = 0;
         user.total_records = 0;
         user.since = now;
-        user.is_suspended = false;
+        user.is_suspended = false;       
+        user.first_action_at = now;
         user.bump = ctx.bumps.user;
     }
 
-    if user.first_action_at == 0 {
-        user.first_action_at = now;
-    }
 
     // 1. Logic Guards
     require!(!user.is_suspended, ErrorCode::UserSuspended);
@@ -123,6 +148,12 @@ pub fn update_user_stature_via_cpi(
 
     // 3. Update State
 
+    // Check Cap
+    require!(
+        program_user_state.total_records < registered_program.max_record_cap, 
+        ErrorCode::TooManyUpdates
+    );
+
 
     if tx_value_lamports > 0 {
         user.total_positive_tx = user.total_positive_tx
@@ -133,7 +164,7 @@ pub fn update_user_stature_via_cpi(
             .checked_add(tx_value_lamports)
             .ok_or(ErrorCode::Overflow)?;
     } else {
-        let penalty_abs = tx_value_lamports.abs() as u64;
+        let penalty_abs = tx_value_lamports.unsigned_abs();
         
         user.total_negative_tx = user.total_negative_tx
             .checked_add(penalty_abs)
