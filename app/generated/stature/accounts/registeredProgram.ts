@@ -63,7 +63,8 @@ export function getRegisteredProgramDiscriminatorBytes() {
 
 export type RegisteredProgram = {
   discriminator: ReadonlyUint8Array;
-  programId: Address;
+  targetProgram: Address;
+  authority: Address;
   approvedBy: Address;
   name: string;
   stature: bigint;
@@ -79,7 +80,8 @@ export type RegisteredProgram = {
 };
 
 export type RegisteredProgramArgs = {
-  programId: Address;
+  targetProgram: Address;
+  authority: Address;
   approvedBy: Address;
   name: string;
   stature: number | bigint;
@@ -99,7 +101,8 @@ export function getRegisteredProgramEncoder(): Encoder<RegisteredProgramArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["programId", getAddressEncoder()],
+      ["targetProgram", getAddressEncoder()],
+      ["authority", getAddressEncoder()],
       ["approvedBy", getAddressEncoder()],
       ["name", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["stature", getI64Encoder()],
@@ -121,7 +124,8 @@ export function getRegisteredProgramEncoder(): Encoder<RegisteredProgramArgs> {
 export function getRegisteredProgramDecoder(): Decoder<RegisteredProgram> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["programId", getAddressDecoder()],
+    ["targetProgram", getAddressDecoder()],
+    ["authority", getAddressDecoder()],
     ["approvedBy", getAddressDecoder()],
     ["name", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["stature", getI64Decoder()],

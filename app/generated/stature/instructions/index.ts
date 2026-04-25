@@ -9,6 +9,7 @@
 export * from "./createAdmin";
 export * from "./createProgram";
 export * from "./createUser";
+export * from "./invokeStatureUpdateCpi";
 export * from "./updateAdmin";
 export * from "./updateProgramRecordCap";
 export * from "./updateProgramStature";

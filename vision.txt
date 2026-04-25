@@ -32,3 +32,27 @@ Ethical Durability: Does the company encourage "delayed gratification" (Franklin
 
 
 The Transparency Report: Since you are acting as the "Oracle," you might eventually want to store a "Reason Hash" (a CID from IPFS) in the Company account. This link would lead to a document explaining why you gave that company a weight of 2.5. This keeps the "Genius Team" accountable to the principles of Adam Smith.
+
+
+
+
+https://solana.com/docs/intro/installation
+
+
+Installed Versions:
+Rust: rustc 1.95.0 (59807616e 2026-04-14)
+Solana CLI: solana-cli 3.1.14 (src:ca2c682f; feat:534737035, client:Agave)
+Anchor CLI: anchor-cli 1.0.1
+Surfpool CLI: surfpool 1.1.2
+Node.js: v24.13.1
+Yarn: 1.22.22
+
+Installation complete. Please restart your terminal to apply all changes.
+➜  anchor git:(main) ✗ rustc --version && solana --version && anchor --version && surfpool --version && node --version && yarn --version
+rustc 1.95.0 (59807616e 2026-04-14)
+solana-cli 3.1.14 (src:ca2c682f; feat:534737035, client:Agave)
+anchor-cli 1.0.1
+surfpool 1.1.2
+v24.13.1
+1.22.22
+➜  anchor git:(main) ✗ curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash                      

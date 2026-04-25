@@ -10,4 +10,4 @@ export * from "./config";
 export * from "./programUserState";
 export * from "./registeredProgram";
 export * from "./statureRecord";
-export * from "./user";
+export * from "./statureUser";

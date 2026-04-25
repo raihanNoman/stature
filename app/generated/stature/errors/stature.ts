@@ -14,48 +14,59 @@ import {
 } from "@solana/kit";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 
+/** Unauthorized: Only the original program PDA can change stature for their user. */
+export const STATURE_ERROR__UNAUTHORIZED = 0x1770; // 6000
+/** AlreadyVerified: Program was already verified by a previous admin */
+export const STATURE_ERROR__ALREADY_VERIFIED = 0x1771; // 6001
+/** ProgramInBadStanding: Program is in bad standing. Only programs with stature above 0 can update stature for its users */
+export const STATURE_ERROR__PROGRAM_IN_BAD_STANDING = 0x1772; // 6002
 /** InsufficientFunds: Insufficient funds. Cannot withdraw from stature vault */
-export const STATURE_ERROR__INSUFFICIENT_FUNDS = 0x1770; // 6000
+export const STATURE_ERROR__INSUFFICIENT_FUNDS = 0x1773; // 6003
 /** Overflow: Arithmetic overflow while updating values */
-export const STATURE_ERROR__OVERFLOW = 0x1771; // 6001
+export const STATURE_ERROR__OVERFLOW = 0x1774; // 6004
 /** ProgramSuspended: Registered Program is suspended and cannot perform this action */
-export const STATURE_ERROR__PROGRAM_SUSPENDED = 0x1772; // 6002
+export const STATURE_ERROR__PROGRAM_SUSPENDED = 0x1775; // 6005
 /** ProgramNotVerified: Registered Program must be verified before updating user stature */
-export const STATURE_ERROR__PROGRAM_NOT_VERIFIED = 0x1773; // 6003
+export const STATURE_ERROR__PROGRAM_NOT_VERIFIED = 0x1776; // 6006
 /** UserSuspended: User is suspended and cannot receive updates */
-export const STATURE_ERROR__USER_SUSPENDED = 0x1774; // 6004
+export const STATURE_ERROR__USER_SUSPENDED = 0x1777; // 6007
 /** InvalidWeight: Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required */
-export const STATURE_ERROR__INVALID_WEIGHT = 0x1775; // 6005
+export const STATURE_ERROR__INVALID_WEIGHT = 0x1778; // 6008
+/** MismatchedTargetProgram: Target Program was registered by a malicious attacker: Possible program squator */
+export const STATURE_ERROR__MISMATCHED_TARGET_PROGRAM = 0x1779; // 6009
 /** InvalidSourceOwner: The source account must be owned by the registered program */
-export const STATURE_ERROR__INVALID_SOURCE_OWNER = 0x1776; // 6006
+export const STATURE_ERROR__INVALID_SOURCE_OWNER = 0x177a; // 6010
 /** RateLimited: Rate limit exceeded: please wait before updating this user again */
-export const STATURE_ERROR__RATE_LIMITED = 0x1777; // 6007
+export const STATURE_ERROR__RATE_LIMITED = 0x177b; // 6011
 /** InvalidRecord: Invalid or malformed stature record */
-export const STATURE_ERROR__INVALID_RECORD = 0x1778; // 6008
+export const STATURE_ERROR__INVALID_RECORD = 0x177c; // 6012
 /** AdminActionOnly: Unauthorized: only the program admin can perform this action */
-export const STATURE_ERROR__ADMIN_ACTION_ONLY = 0x1779; // 6009
+export const STATURE_ERROR__ADMIN_ACTION_ONLY = 0x177d; // 6013
 /** RequestLimitIncrease: Registered Program has reached its update limit; request a cap increase from admin */
-export const STATURE_ERROR__REQUEST_LIMIT_INCREASE = 0x177a; // 6010
+export const STATURE_ERROR__REQUEST_LIMIT_INCREASE = 0x177e; // 6014
 /** TooMuch: Stature update amount exceeds allowed bounds */
-export const STATURE_ERROR__TOO_MUCH = 0x177b; // 6011
+export const STATURE_ERROR__TOO_MUCH = 0x177f; // 6015
 /** StringTooLong: Input string is too long. Use a shorter name. */
-export const STATURE_ERROR__STRING_TOO_LONG = 0x177c; // 6012
+export const STATURE_ERROR__STRING_TOO_LONG = 0x1780; // 6016
 /** CannotSelfAssignStature: Cannot assign stature to yourself via your Registered Program */
-export const STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE = 0x177d; // 6013
+export const STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE = 0x1781; // 6017
 /** AlreadyInitialized: Cannot re-initialize account after already intialized once */
-export const STATURE_ERROR__ALREADY_INITIALIZED = 0x177e; // 6014
+export const STATURE_ERROR__ALREADY_INITIALIZED = 0x1782; // 6018
 /** TooManyUpdates: Reached company to user stature update hard cap */
-export const STATURE_ERROR__TOO_MANY_UPDATES = 0x177f; // 6015
+export const STATURE_ERROR__TOO_MANY_UPDATES = 0x1783; // 6019
 
 export type StatureError =
   | typeof STATURE_ERROR__ADMIN_ACTION_ONLY
   | typeof STATURE_ERROR__ALREADY_INITIALIZED
+  | typeof STATURE_ERROR__ALREADY_VERIFIED
   | typeof STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE
   | typeof STATURE_ERROR__INSUFFICIENT_FUNDS
   | typeof STATURE_ERROR__INVALID_RECORD
   | typeof STATURE_ERROR__INVALID_SOURCE_OWNER
   | typeof STATURE_ERROR__INVALID_WEIGHT
+  | typeof STATURE_ERROR__MISMATCHED_TARGET_PROGRAM
   | typeof STATURE_ERROR__OVERFLOW
+  | typeof STATURE_ERROR__PROGRAM_IN_BAD_STANDING
   | typeof STATURE_ERROR__PROGRAM_NOT_VERIFIED
   | typeof STATURE_ERROR__PROGRAM_SUSPENDED
   | typeof STATURE_ERROR__RATE_LIMITED
@@ -63,6 +74,7 @@ export type StatureError =
   | typeof STATURE_ERROR__STRING_TOO_LONG
   | typeof STATURE_ERROR__TOO_MANY_UPDATES
   | typeof STATURE_ERROR__TOO_MUCH
+  | typeof STATURE_ERROR__UNAUTHORIZED
   | typeof STATURE_ERROR__USER_SUSPENDED;
 
 let statureErrorMessages: Record<StatureError, string> | undefined;
@@ -70,12 +82,15 @@ if (process.env.NODE_ENV !== "production") {
   statureErrorMessages = {
     [STATURE_ERROR__ADMIN_ACTION_ONLY]: `Unauthorized: only the program admin can perform this action`,
     [STATURE_ERROR__ALREADY_INITIALIZED]: `Cannot re-initialize account after already intialized once`,
+    [STATURE_ERROR__ALREADY_VERIFIED]: `Program was already verified by a previous admin`,
     [STATURE_ERROR__CANNOT_SELF_ASSIGN_STATURE]: `Cannot assign stature to yourself via your Registered Program`,
     [STATURE_ERROR__INSUFFICIENT_FUNDS]: `Insufficient funds. Cannot withdraw from stature vault`,
     [STATURE_ERROR__INVALID_RECORD]: `Invalid or malformed stature record`,
     [STATURE_ERROR__INVALID_SOURCE_OWNER]: `The source account must be owned by the registered program`,
     [STATURE_ERROR__INVALID_WEIGHT]: `Registered Program weight out of bounds; must be between 0 and 10. verification or admin action required`,
+    [STATURE_ERROR__MISMATCHED_TARGET_PROGRAM]: `Target Program was registered by a malicious attacker: Possible program squator`,
     [STATURE_ERROR__OVERFLOW]: `Arithmetic overflow while updating values`,
+    [STATURE_ERROR__PROGRAM_IN_BAD_STANDING]: `Program is in bad standing. Only programs with stature above 0 can update stature for its users`,
     [STATURE_ERROR__PROGRAM_NOT_VERIFIED]: `Registered Program must be verified before updating user stature`,
     [STATURE_ERROR__PROGRAM_SUSPENDED]: `Registered Program is suspended and cannot perform this action`,
     [STATURE_ERROR__RATE_LIMITED]: `Rate limit exceeded: please wait before updating this user again`,
@@ -83,6 +98,7 @@ if (process.env.NODE_ENV !== "production") {
     [STATURE_ERROR__STRING_TOO_LONG]: `Input string is too long. Use a shorter name.`,
     [STATURE_ERROR__TOO_MANY_UPDATES]: `Reached company to user stature update hard cap`,
     [STATURE_ERROR__TOO_MUCH]: `Stature update amount exceeds allowed bounds`,
+    [STATURE_ERROR__UNAUTHORIZED]: `Only the original program PDA can change stature for their user.`,
     [STATURE_ERROR__USER_SUSPENDED]: `User is suspended and cannot receive updates`,
   };
 }

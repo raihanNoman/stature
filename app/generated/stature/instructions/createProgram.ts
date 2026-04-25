@@ -12,8 +12,10 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU32Decoder,
@@ -56,8 +58,9 @@ export function getCreateProgramDiscriminatorBytes() {
 
 export type CreateProgramInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountTargetProgram extends string | AccountMeta<string> = string,
+  TAccountProgramData extends string | AccountMeta<string> = string,
   TAccountRegisteredProgram extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
@@ -66,13 +69,16 @@ export type CreateProgramInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountPayer extends string
-        ? WritableSignerAccount<TAccountPayer> &
-            AccountSignerMeta<TAccountPayer>
-        : TAccountPayer,
+      TAccountAuthority extends string
+        ? WritableSignerAccount<TAccountAuthority> &
+            AccountSignerMeta<TAccountAuthority>
+        : TAccountAuthority,
       TAccountTargetProgram extends string
         ? ReadonlyAccount<TAccountTargetProgram>
         : TAccountTargetProgram,
+      TAccountProgramData extends string
+        ? ReadonlyAccount<TAccountProgramData>
+        : TAccountProgramData,
       TAccountRegisteredProgram extends string
         ? WritableAccount<TAccountRegisteredProgram>
         : TAccountRegisteredProgram,
@@ -118,29 +124,35 @@ export function getCreateProgramInstructionDataCodec(): Codec<
 }
 
 export type CreateProgramAsyncInput<
-  TAccountPayer extends string = string,
+  TAccountAuthority extends string = string,
   TAccountTargetProgram extends string = string,
+  TAccountProgramData extends string = string,
   TAccountRegisteredProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  payer: TransactionSigner<TAccountPayer>;
-  /** The Program ID you are whitelisting */
+  authority: TransactionSigner<TAccountAuthority>;
+  /** If this isn't a valid Program ID, the program_data account derivation will fail. */
   targetProgram: Address<TAccountTargetProgram>;
+  /** The ProgramData account containing the upgrade authority */
+  programData?: Address<TAccountProgramData>;
+  /** The Program ID you are whitelisting */
   registeredProgram?: Address<TAccountRegisteredProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   name: CreateProgramInstructionDataArgs["name"];
 };
 
 export async function getCreateProgramInstructionAsync<
-  TAccountPayer extends string,
+  TAccountAuthority extends string,
   TAccountTargetProgram extends string,
+  TAccountProgramData extends string,
   TAccountRegisteredProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
   input: CreateProgramAsyncInput<
-    TAccountPayer,
+    TAccountAuthority,
     TAccountTargetProgram,
+    TAccountProgramData,
     TAccountRegisteredProgram,
     TAccountSystemProgram
   >,
@@ -148,8 +160,9 @@ export async function getCreateProgramInstructionAsync<
 ): Promise<
   CreateProgramInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountAuthority,
     TAccountTargetProgram,
+    TAccountProgramData,
     TAccountRegisteredProgram,
     TAccountSystemProgram
   >
@@ -159,8 +172,9 @@ export async function getCreateProgramInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    payer: { value: input.payer ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
     targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    programData: { value: input.programData ?? null, isWritable: false },
     registeredProgram: {
       value: input.registeredProgram ?? null,
       isWritable: true,
@@ -176,6 +190,15 @@ export async function getCreateProgramInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.programData.value) {
+    accounts.programData.value = await getProgramDerivedAddress({
+      programAddress:
+        "BPFLoaderUpgradeab1e11111111111111111111111" as Address<"BPFLoaderUpgradeab1e11111111111111111111111">,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.targetProgram.value)),
+      ],
+    });
+  }
   if (!accounts.registeredProgram.value) {
     accounts.registeredProgram.value = await findRegisteredProgramPda({
       targetProgram: expectAddress(accounts.targetProgram.value),
@@ -189,8 +212,9 @@ export async function getCreateProgramInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.authority),
       getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.programData),
       getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -200,45 +224,53 @@ export async function getCreateProgramInstructionAsync<
     programAddress,
   } as CreateProgramInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountAuthority,
     TAccountTargetProgram,
+    TAccountProgramData,
     TAccountRegisteredProgram,
     TAccountSystemProgram
   >);
 }
 
 export type CreateProgramInput<
-  TAccountPayer extends string = string,
+  TAccountAuthority extends string = string,
   TAccountTargetProgram extends string = string,
+  TAccountProgramData extends string = string,
   TAccountRegisteredProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  payer: TransactionSigner<TAccountPayer>;
-  /** The Program ID you are whitelisting */
+  authority: TransactionSigner<TAccountAuthority>;
+  /** If this isn't a valid Program ID, the program_data account derivation will fail. */
   targetProgram: Address<TAccountTargetProgram>;
+  /** The ProgramData account containing the upgrade authority */
+  programData: Address<TAccountProgramData>;
+  /** The Program ID you are whitelisting */
   registeredProgram: Address<TAccountRegisteredProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   name: CreateProgramInstructionDataArgs["name"];
 };
 
 export function getCreateProgramInstruction<
-  TAccountPayer extends string,
+  TAccountAuthority extends string,
   TAccountTargetProgram extends string,
+  TAccountProgramData extends string,
   TAccountRegisteredProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
   input: CreateProgramInput<
-    TAccountPayer,
+    TAccountAuthority,
     TAccountTargetProgram,
+    TAccountProgramData,
     TAccountRegisteredProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): CreateProgramInstruction<
   TProgramAddress,
-  TAccountPayer,
+  TAccountAuthority,
   TAccountTargetProgram,
+  TAccountProgramData,
   TAccountRegisteredProgram,
   TAccountSystemProgram
 > {
@@ -247,8 +279,9 @@ export function getCreateProgramInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    payer: { value: input.payer ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
     targetProgram: { value: input.targetProgram ?? null, isWritable: false },
+    programData: { value: input.programData ?? null, isWritable: false },
     registeredProgram: {
       value: input.registeredProgram ?? null,
       isWritable: true,
@@ -272,8 +305,9 @@ export function getCreateProgramInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.authority),
       getAccountMeta(accounts.targetProgram),
+      getAccountMeta(accounts.programData),
       getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -283,8 +317,9 @@ export function getCreateProgramInstruction<
     programAddress,
   } as CreateProgramInstruction<
     TProgramAddress,
-    TAccountPayer,
+    TAccountAuthority,
     TAccountTargetProgram,
+    TAccountProgramData,
     TAccountRegisteredProgram,
     TAccountSystemProgram
   >);
@@ -296,11 +331,14 @@ export type ParsedCreateProgramInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    payer: TAccountMetas[0];
-    /** The Program ID you are whitelisting */
+    authority: TAccountMetas[0];
+    /** If this isn't a valid Program ID, the program_data account derivation will fail. */
     targetProgram: TAccountMetas[1];
-    registeredProgram: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    /** The ProgramData account containing the upgrade authority */
+    programData: TAccountMetas[2];
+    /** The Program ID you are whitelisting */
+    registeredProgram: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: CreateProgramInstructionData;
 };
@@ -313,7 +351,7 @@ export function parseCreateProgramInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCreateProgramInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -326,8 +364,9 @@ export function parseCreateProgramInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      payer: getNextAccount(),
+      authority: getNextAccount(),
       targetProgram: getNextAccount(),
+      programData: getNextAccount(),
       registeredProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },

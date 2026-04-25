@@ -20,6 +20,7 @@ import {
   parseCreateAdminInstruction,
   parseCreateProgramInstruction,
   parseCreateUserInstruction,
+  parseInvokeStatureUpdateCpiInstruction,
   parseUpdateAdminInstruction,
   parseUpdateProgramRecordCapInstruction,
   parseUpdateProgramStatureInstruction,
@@ -32,6 +33,7 @@ import {
   type ParsedCreateAdminInstruction,
   type ParsedCreateProgramInstruction,
   type ParsedCreateUserInstruction,
+  type ParsedInvokeStatureUpdateCpiInstruction,
   type ParsedUpdateAdminInstruction,
   type ParsedUpdateProgramRecordCapInstruction,
   type ParsedUpdateProgramStatureInstruction,
@@ -51,7 +53,7 @@ export enum StatureAccount {
   ProgramUserState,
   RegisteredProgram,
   StatureRecord,
-  User,
+  StatureUser,
 }
 
 export function identifyStatureAccount(
@@ -106,12 +108,12 @@ export function identifyStatureAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([159, 117, 95, 227, 239, 151, 58, 236]),
+        new Uint8Array([177, 128, 221, 14, 32, 213, 246, 29]),
       ),
       0,
     )
   ) {
-    return StatureAccount.User;
+    return StatureAccount.StatureUser;
   }
   throw new Error(
     "The provided account could not be identified as a stature account.",
@@ -122,6 +124,7 @@ export enum StatureInstruction {
   CreateAdmin,
   CreateProgram,
   CreateUser,
+  InvokeStatureUpdateCpi,
   UpdateAdmin,
   UpdateProgramRecordCap,
   UpdateProgramStature,
@@ -169,6 +172,17 @@ export function identifyStatureInstruction(
     )
   ) {
     return StatureInstruction.CreateUser;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([138, 156, 179, 85, 223, 89, 42, 164]),
+      ),
+      0,
+    )
+  ) {
+    return StatureInstruction.InvokeStatureUpdateCpi;
   }
   if (
     containsBytes(
@@ -287,6 +301,9 @@ export type ParsedStatureInstruction<
       instructionType: StatureInstruction.CreateUser;
     } & ParsedCreateUserInstruction<TProgram>)
   | ({
+      instructionType: StatureInstruction.InvokeStatureUpdateCpi;
+    } & ParsedInvokeStatureUpdateCpiInstruction<TProgram>)
+  | ({
       instructionType: StatureInstruction.UpdateAdmin;
     } & ParsedUpdateAdminInstruction<TProgram>)
   | ({
@@ -338,6 +355,13 @@ export function parseStatureInstruction<TProgram extends string>(
       return {
         instructionType: StatureInstruction.CreateUser,
         ...parseCreateUserInstruction(instruction),
+      };
+    }
+    case StatureInstruction.InvokeStatureUpdateCpi: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: StatureInstruction.InvokeStatureUpdateCpi,
+        ...parseInvokeStatureUpdateCpiInstruction(instruction),
       };
     }
     case StatureInstruction.UpdateAdmin: {

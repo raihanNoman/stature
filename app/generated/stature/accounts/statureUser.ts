@@ -49,15 +49,17 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 
-export const USER_DISCRIMINATOR = new Uint8Array([
-  159, 117, 95, 227, 239, 151, 58, 236,
+export const STATURE_USER_DISCRIMINATOR = new Uint8Array([
+  177, 128, 221, 14, 32, 213, 246, 29,
 ]);
 
-export function getUserDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(USER_DISCRIMINATOR);
+export function getStatureUserDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    STATURE_USER_DISCRIMINATOR,
+  );
 }
 
-export type User = {
+export type StatureUser = {
   discriminator: ReadonlyUint8Array;
   wallet: Address;
   name: string;
@@ -71,7 +73,7 @@ export type User = {
   bump: number;
 };
 
-export type UserArgs = {
+export type StatureUserArgs = {
   wallet: Address;
   name: string;
   stature: number | bigint;
@@ -84,8 +86,8 @@ export type UserArgs = {
   bump: number;
 };
 
-/** Gets the encoder for {@link UserArgs} account data. */
-export function getUserEncoder(): Encoder<UserArgs> {
+/** Gets the encoder for {@link StatureUserArgs} account data. */
+export function getStatureUserEncoder(): Encoder<StatureUserArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
@@ -100,12 +102,12 @@ export function getUserEncoder(): Encoder<UserArgs> {
       ["since", getI64Encoder()],
       ["bump", getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: USER_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: STATURE_USER_DISCRIMINATOR }),
   );
 }
 
-/** Gets the decoder for {@link User} account data. */
-export function getUserDecoder(): Decoder<User> {
+/** Gets the decoder for {@link StatureUser} account data. */
+export function getStatureUserDecoder(): Decoder<StatureUser> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["wallet", getAddressDecoder()],
@@ -121,60 +123,60 @@ export function getUserDecoder(): Decoder<User> {
   ]);
 }
 
-/** Gets the codec for {@link User} account data. */
-export function getUserCodec(): Codec<UserArgs, User> {
-  return combineCodec(getUserEncoder(), getUserDecoder());
+/** Gets the codec for {@link StatureUser} account data. */
+export function getStatureUserCodec(): Codec<StatureUserArgs, StatureUser> {
+  return combineCodec(getStatureUserEncoder(), getStatureUserDecoder());
 }
 
-export function decodeUser<TAddress extends string = string>(
+export function decodeStatureUser<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress>,
-): Account<User, TAddress>;
-export function decodeUser<TAddress extends string = string>(
+): Account<StatureUser, TAddress>;
+export function decodeStatureUser<TAddress extends string = string>(
   encodedAccount: MaybeEncodedAccount<TAddress>,
-): MaybeAccount<User, TAddress>;
-export function decodeUser<TAddress extends string = string>(
+): MaybeAccount<StatureUser, TAddress>;
+export function decodeStatureUser<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
-): Account<User, TAddress> | MaybeAccount<User, TAddress> {
+): Account<StatureUser, TAddress> | MaybeAccount<StatureUser, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getUserDecoder(),
+    getStatureUserDecoder(),
   );
 }
 
-export async function fetchUser<TAddress extends string = string>(
+export async function fetchStatureUser<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<Account<User, TAddress>> {
-  const maybeAccount = await fetchMaybeUser(rpc, address, config);
+): Promise<Account<StatureUser, TAddress>> {
+  const maybeAccount = await fetchMaybeStatureUser(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeUser<TAddress extends string = string>(
+export async function fetchMaybeStatureUser<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<MaybeAccount<User, TAddress>> {
+): Promise<MaybeAccount<StatureUser, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeUser(maybeAccount);
+  return decodeStatureUser(maybeAccount);
 }
 
-export async function fetchAllUser(
+export async function fetchAllStatureUser(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<Account<User>[]> {
-  const maybeAccounts = await fetchAllMaybeUser(rpc, addresses, config);
+): Promise<Account<StatureUser>[]> {
+  const maybeAccounts = await fetchAllMaybeStatureUser(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeUser(
+export async function fetchAllMaybeStatureUser(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<MaybeAccount<User>[]> {
+): Promise<MaybeAccount<StatureUser>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeUser(maybeAccount));
+  return maybeAccounts.map((maybeAccount) => decodeStatureUser(maybeAccount));
 }
