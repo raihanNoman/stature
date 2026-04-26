@@ -38,9 +38,19 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findStatureVaultPda } from "../pdas";
+import {
+  findProgramUserStatePda,
+  findRecordPda,
+  findRegisteredProgramPda,
+  findStatureVaultPda,
+  findUserPda,
+} from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from "../shared";
 
 export const INVOKE_STATURE_UPDATE_CPI_DISCRIMINATOR = new Uint8Array([
   138, 156, 179, 85, 223, 89, 42, 164,
@@ -169,12 +179,12 @@ export type InvokeStatureUpdateCpiAsyncInput<
 > = {
   signer: TransactionSigner<TAccountSigner>;
   targetProgram: Address<TAccountTargetProgram>;
-  registeredProgram: Address<TAccountRegisteredProgram>;
+  registeredProgram?: Address<TAccountRegisteredProgram>;
   userWallet: Address<TAccountUserWallet>;
-  user: Address<TAccountUser>;
+  user?: Address<TAccountUser>;
   registeredProgramSourceAccount: Address<TAccountRegisteredProgramSourceAccount>;
-  programUserState: Address<TAccountProgramUserState>;
-  record: Address<TAccountRecord>;
+  programUserState?: Address<TAccountProgramUserState>;
+  record?: Address<TAccountRecord>;
   statureVault?: Address<TAccountStatureVault>;
   statureProgram?: Address<TAccountStatureProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -261,6 +271,31 @@ export async function getInvokeStatureUpdateCpiInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.registeredProgram.value) {
+    accounts.registeredProgram.value = await findRegisteredProgramPda({
+      targetProgram: expectAddress(accounts.targetProgram.value),
+    });
+  }
+  if (!accounts.user.value) {
+    accounts.user.value = await findUserPda({
+      userWallet: expectAddress(accounts.userWallet.value),
+    });
+  }
+  if (!accounts.programUserState.value) {
+    accounts.programUserState.value = await findProgramUserStatePda({
+      registeredProgram: expectAddress(accounts.registeredProgram.value),
+      userWallet: expectAddress(accounts.userWallet.value),
+    });
+  }
+  if (!accounts.record.value) {
+    accounts.record.value = await findRecordPda({
+      userWallet: expectAddress(accounts.userWallet.value),
+      registeredProgram: expectAddress(accounts.registeredProgram.value),
+      registeredProgramSourceAccount: expectAddress(
+        accounts.registeredProgramSourceAccount.value,
+      ),
+    });
+  }
   if (!accounts.statureVault.value) {
     accounts.statureVault.value = await findStatureVaultPda();
   }

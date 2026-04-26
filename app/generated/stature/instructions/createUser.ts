@@ -36,7 +36,7 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
-import { findUserPda } from "../pdas";
+import { findCreateUserUserPda } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
@@ -161,7 +161,7 @@ export async function getCreateUserInstructionAsync<
 
   // Resolve default values.
   if (!accounts.user.value) {
-    accounts.user.value = await findUserPda({
+    accounts.user.value = await findCreateUserUserPda({
       owner: expectAddress(accounts.owner.value),
     });
   }

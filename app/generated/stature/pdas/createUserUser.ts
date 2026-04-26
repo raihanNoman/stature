@@ -14,12 +14,12 @@ import {
   type ProgramDerivedAddress,
 } from "@solana/kit";
 
-export type UpdateUserStatureUserSeeds = {
-  userWallet: Address;
+export type CreateUserUserSeeds = {
+  owner: Address;
 };
 
-export async function findUpdateUserStatureUserPda(
-  seeds: UpdateUserStatureUserSeeds,
+export async function findCreateUserUserPda(
+  seeds: CreateUserUserSeeds,
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
@@ -29,7 +29,7 @@ export async function findUpdateUserStatureUserPda(
     programAddress,
     seeds: [
       getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
-      getAddressEncoder().encode(seeds.userWallet),
+      getAddressEncoder().encode(seeds.owner),
     ],
   });
 }

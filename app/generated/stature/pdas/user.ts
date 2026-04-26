@@ -15,7 +15,7 @@ import {
 } from "@solana/kit";
 
 export type UserSeeds = {
-  owner: Address;
+  userWallet: Address;
 };
 
 export async function findUserPda(
@@ -29,7 +29,7 @@ export async function findUserPda(
     programAddress,
     seeds: [
       getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
-      getAddressEncoder().encode(seeds.owner),
+      getAddressEncoder().encode(seeds.userWallet),
     ],
   });
 }

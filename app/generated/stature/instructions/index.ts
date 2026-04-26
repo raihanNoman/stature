@@ -8,6 +8,7 @@
 
 export * from "./createAdmin";
 export * from "./createProgram";
+export * from "./createProgramUserState";
 export * from "./createUser";
 export * from "./invokeStatureUpdateCpi";
 export * from "./updateAdmin";

@@ -14,7 +14,7 @@ import { useCluster } from "@/app/components/cluster-context";
 import {
   fetchMaybeProgramUserState,
   fetchMaybeRegisteredProgram,
-  fetchMaybeUser,
+  fetchMaybeStatureUser,
   findProgramUserStatePda,
   getUpdateUserStatureInstructionAsync,
 } from "@/app/generated/stature";
@@ -79,7 +79,7 @@ export default async function UpdateUserStature({
         registeredProgramAddress
       );
 
-      const userAccount = await fetchMaybeUser(
+      const userAccount = await fetchMaybeStatureUser(
         solanaClient.rpc,
         signer.address
       );
@@ -110,7 +110,7 @@ export default async function UpdateUserStature({
 
       const ix = await getUpdateUserStatureInstructionAsync({
         'txValueLamports': amount_BigInt,
-        'payer': signer, 
+        'signer': signer, 
         'userWallet': userAddress, 
         'targetProgram': registeredProgramAccount.address, 
         'registeredProgramSourceAccount': registeredProgramAccount.address, 
@@ -179,7 +179,7 @@ export default async function UpdateUserStature({
       if (!userAddressQuery) throw "no user address";
       const userAddress = address(userAddressQuery);
 
-      const userAccount = await fetchMaybeUser(solanaClient.rpc, userAddress);
+      const userAccount = await fetchMaybeStatureUser(solanaClient.rpc, userAddress);
       if (userAccount.exists) {
         console.log("solana user found!");
 

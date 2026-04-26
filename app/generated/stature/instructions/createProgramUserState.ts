@@ -7,28 +7,20 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -40,9 +32,7 @@ import {
 } from "@solana/kit";
 import {
   findProgramUserStatePda,
-  findRecordPda,
   findRegisteredProgramPda,
-  findStatureVaultPda,
   findUserPda,
 } from "../pdas";
 import { STATURE_PROGRAM_ADDRESS } from "../programs";
@@ -52,28 +42,24 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const UPDATE_USER_STATURE_DISCRIMINATOR = new Uint8Array([
-  63, 89, 194, 213, 218, 230, 101, 127,
+export const CREATE_PROGRAM_USER_STATE_DISCRIMINATOR = new Uint8Array([
+  175, 102, 44, 242, 219, 29, 33, 146,
 ]);
 
-export function getUpdateUserStatureDiscriminatorBytes() {
+export function getCreateProgramUserStateDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_USER_STATURE_DISCRIMINATOR,
+    CREATE_PROGRAM_USER_STATE_DISCRIMINATOR,
   );
 }
 
-export type UpdateUserStatureInstruction<
+export type CreateProgramUserStateInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
-  TAccountSigner extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountTargetProgram extends string | AccountMeta<string> = string,
   TAccountRegisteredProgram extends string | AccountMeta<string> = string,
   TAccountUserWallet extends string | AccountMeta<string> = string,
   TAccountUser extends string | AccountMeta<string> = string,
-  TAccountRegisteredProgramSourceAccount extends string | AccountMeta<string> =
-    string,
   TAccountProgramUserState extends string | AccountMeta<string> = string,
-  TAccountRecord extends string | AccountMeta<string> = string,
-  TAccountStatureVault extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -81,34 +67,25 @@ export type UpdateUserStatureInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountSigner extends string
-        ? WritableSignerAccount<TAccountSigner> &
-            AccountSignerMeta<TAccountSigner>
-        : TAccountSigner,
+      TAccountAuthority extends string
+        ? WritableSignerAccount<TAccountAuthority> &
+            AccountSignerMeta<TAccountAuthority>
+        : TAccountAuthority,
       TAccountTargetProgram extends string
         ? ReadonlyAccount<TAccountTargetProgram>
         : TAccountTargetProgram,
       TAccountRegisteredProgram extends string
-        ? WritableAccount<TAccountRegisteredProgram>
+        ? ReadonlyAccount<TAccountRegisteredProgram>
         : TAccountRegisteredProgram,
       TAccountUserWallet extends string
         ? ReadonlyAccount<TAccountUserWallet>
         : TAccountUserWallet,
       TAccountUser extends string
-        ? WritableAccount<TAccountUser>
+        ? ReadonlyAccount<TAccountUser>
         : TAccountUser,
-      TAccountRegisteredProgramSourceAccount extends string
-        ? WritableAccount<TAccountRegisteredProgramSourceAccount>
-        : TAccountRegisteredProgramSourceAccount,
       TAccountProgramUserState extends string
         ? WritableAccount<TAccountProgramUserState>
         : TAccountProgramUserState,
-      TAccountRecord extends string
-        ? WritableAccount<TAccountRecord>
-        : TAccountRecord,
-      TAccountStatureVault extends string
-        ? WritableAccount<TAccountStatureVault>
-        : TAccountStatureVault,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -116,114 +93,89 @@ export type UpdateUserStatureInstruction<
     ]
   >;
 
-export type UpdateUserStatureInstructionData = {
+export type CreateProgramUserStateInstructionData = {
   discriminator: ReadonlyUint8Array;
-  txValueLamports: bigint;
-  memo: string;
 };
 
-export type UpdateUserStatureInstructionDataArgs = {
-  txValueLamports: number | bigint;
-  memo: string;
-};
+export type CreateProgramUserStateInstructionDataArgs = {};
 
-export function getUpdateUserStatureInstructionDataEncoder(): Encoder<UpdateUserStatureInstructionDataArgs> {
+export function getCreateProgramUserStateInstructionDataEncoder(): FixedSizeEncoder<CreateProgramUserStateInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["txValueLamports", getI64Encoder()],
-      ["memo", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ]),
-    (value) => ({ ...value, discriminator: UPDATE_USER_STATURE_DISCRIMINATOR }),
+    getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
+    (value) => ({
+      ...value,
+      discriminator: CREATE_PROGRAM_USER_STATE_DISCRIMINATOR,
+    }),
   );
 }
 
-export function getUpdateUserStatureInstructionDataDecoder(): Decoder<UpdateUserStatureInstructionData> {
+export function getCreateProgramUserStateInstructionDataDecoder(): FixedSizeDecoder<CreateProgramUserStateInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["txValueLamports", getI64Decoder()],
-    ["memo", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getUpdateUserStatureInstructionDataCodec(): Codec<
-  UpdateUserStatureInstructionDataArgs,
-  UpdateUserStatureInstructionData
+export function getCreateProgramUserStateInstructionDataCodec(): FixedSizeCodec<
+  CreateProgramUserStateInstructionDataArgs,
+  CreateProgramUserStateInstructionData
 > {
   return combineCodec(
-    getUpdateUserStatureInstructionDataEncoder(),
-    getUpdateUserStatureInstructionDataDecoder(),
+    getCreateProgramUserStateInstructionDataEncoder(),
+    getCreateProgramUserStateInstructionDataDecoder(),
   );
 }
 
-export type UpdateUserStatureAsyncInput<
-  TAccountSigner extends string = string,
+export type CreateProgramUserStateAsyncInput<
+  TAccountAuthority extends string = string,
   TAccountTargetProgram extends string = string,
   TAccountRegisteredProgram extends string = string,
   TAccountUserWallet extends string = string,
   TAccountUser extends string = string,
-  TAccountRegisteredProgramSourceAccount extends string = string,
   TAccountProgramUserState extends string = string,
-  TAccountRecord extends string = string,
-  TAccountStatureVault extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  authority: TransactionSigner<TAccountAuthority>;
   /**
-   * The program calling this MUST sign/authorize via its PDA or specific key
-   * In a Program-to-Program model, this is usually a PDA from the calling program
+   * The Program ID you are whitelisting
+   * If this isn't a valid Program ID, the program_data account derivation will fail.
    */
-  signer: TransactionSigner<TAccountSigner>;
   targetProgram: Address<TAccountTargetProgram>;
   registeredProgram?: Address<TAccountRegisteredProgram>;
   userWallet: Address<TAccountUserWallet>;
   user?: Address<TAccountUser>;
-  registeredProgramSourceAccount: Address<TAccountRegisteredProgramSourceAccount>;
   programUserState?: Address<TAccountProgramUserState>;
-  record?: Address<TAccountRecord>;
-  statureVault?: Address<TAccountStatureVault>;
   systemProgram?: Address<TAccountSystemProgram>;
-  txValueLamports: UpdateUserStatureInstructionDataArgs["txValueLamports"];
-  memo: UpdateUserStatureInstructionDataArgs["memo"];
 };
 
-export async function getUpdateUserStatureInstructionAsync<
-  TAccountSigner extends string,
+export async function getCreateProgramUserStateInstructionAsync<
+  TAccountAuthority extends string,
   TAccountTargetProgram extends string,
   TAccountRegisteredProgram extends string,
   TAccountUserWallet extends string,
   TAccountUser extends string,
-  TAccountRegisteredProgramSourceAccount extends string,
   TAccountProgramUserState extends string,
-  TAccountRecord extends string,
-  TAccountStatureVault extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateUserStatureAsyncInput<
-    TAccountSigner,
+  input: CreateProgramUserStateAsyncInput<
+    TAccountAuthority,
     TAccountTargetProgram,
     TAccountRegisteredProgram,
     TAccountUserWallet,
     TAccountUser,
-    TAccountRegisteredProgramSourceAccount,
     TAccountProgramUserState,
-    TAccountRecord,
-    TAccountStatureVault,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  UpdateUserStatureInstruction<
+  CreateProgramUserStateInstruction<
     TProgramAddress,
-    TAccountSigner,
+    TAccountAuthority,
     TAccountTargetProgram,
     TAccountRegisteredProgram,
     TAccountUserWallet,
     TAccountUser,
-    TAccountRegisteredProgramSourceAccount,
     TAccountProgramUserState,
-    TAccountRecord,
-    TAccountStatureVault,
     TAccountSystemProgram
   >
 > {
@@ -232,33 +184,24 @@ export async function getUpdateUserStatureInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
     targetProgram: { value: input.targetProgram ?? null, isWritable: false },
     registeredProgram: {
       value: input.registeredProgram ?? null,
-      isWritable: true,
+      isWritable: false,
     },
     userWallet: { value: input.userWallet ?? null, isWritable: false },
-    user: { value: input.user ?? null, isWritable: true },
-    registeredProgramSourceAccount: {
-      value: input.registeredProgramSourceAccount ?? null,
-      isWritable: true,
-    },
+    user: { value: input.user ?? null, isWritable: false },
     programUserState: {
       value: input.programUserState ?? null,
       isWritable: true,
     },
-    record: { value: input.record ?? null, isWritable: true },
-    statureVault: { value: input.statureVault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.registeredProgram.value) {
@@ -277,18 +220,6 @@ export async function getUpdateUserStatureInstructionAsync<
       userWallet: expectAddress(accounts.userWallet.value),
     });
   }
-  if (!accounts.record.value) {
-    accounts.record.value = await findRecordPda({
-      userWallet: expectAddress(accounts.userWallet.value),
-      registeredProgram: expectAddress(accounts.registeredProgram.value),
-      registeredProgramSourceAccount: expectAddress(
-        accounts.registeredProgramSourceAccount.value,
-      ),
-    });
-  }
-  if (!accounts.statureVault.value) {
-    accounts.statureVault.value = await findStatureVaultPda();
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
@@ -297,103 +228,78 @@ export async function getUpdateUserStatureInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.signer),
+      getAccountMeta(accounts.authority),
       getAccountMeta(accounts.targetProgram),
       getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.userWallet),
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.registeredProgramSourceAccount),
       getAccountMeta(accounts.programUserState),
-      getAccountMeta(accounts.record),
-      getAccountMeta(accounts.statureVault),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getUpdateUserStatureInstructionDataEncoder().encode(
-      args as UpdateUserStatureInstructionDataArgs,
-    ),
+    data: getCreateProgramUserStateInstructionDataEncoder().encode({}),
     programAddress,
-  } as UpdateUserStatureInstruction<
+  } as CreateProgramUserStateInstruction<
     TProgramAddress,
-    TAccountSigner,
+    TAccountAuthority,
     TAccountTargetProgram,
     TAccountRegisteredProgram,
     TAccountUserWallet,
     TAccountUser,
-    TAccountRegisteredProgramSourceAccount,
     TAccountProgramUserState,
-    TAccountRecord,
-    TAccountStatureVault,
     TAccountSystemProgram
   >);
 }
 
-export type UpdateUserStatureInput<
-  TAccountSigner extends string = string,
+export type CreateProgramUserStateInput<
+  TAccountAuthority extends string = string,
   TAccountTargetProgram extends string = string,
   TAccountRegisteredProgram extends string = string,
   TAccountUserWallet extends string = string,
   TAccountUser extends string = string,
-  TAccountRegisteredProgramSourceAccount extends string = string,
   TAccountProgramUserState extends string = string,
-  TAccountRecord extends string = string,
-  TAccountStatureVault extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  authority: TransactionSigner<TAccountAuthority>;
   /**
-   * The program calling this MUST sign/authorize via its PDA or specific key
-   * In a Program-to-Program model, this is usually a PDA from the calling program
+   * The Program ID you are whitelisting
+   * If this isn't a valid Program ID, the program_data account derivation will fail.
    */
-  signer: TransactionSigner<TAccountSigner>;
   targetProgram: Address<TAccountTargetProgram>;
   registeredProgram: Address<TAccountRegisteredProgram>;
   userWallet: Address<TAccountUserWallet>;
   user: Address<TAccountUser>;
-  registeredProgramSourceAccount: Address<TAccountRegisteredProgramSourceAccount>;
   programUserState: Address<TAccountProgramUserState>;
-  record: Address<TAccountRecord>;
-  statureVault: Address<TAccountStatureVault>;
   systemProgram?: Address<TAccountSystemProgram>;
-  txValueLamports: UpdateUserStatureInstructionDataArgs["txValueLamports"];
-  memo: UpdateUserStatureInstructionDataArgs["memo"];
 };
 
-export function getUpdateUserStatureInstruction<
-  TAccountSigner extends string,
+export function getCreateProgramUserStateInstruction<
+  TAccountAuthority extends string,
   TAccountTargetProgram extends string,
   TAccountRegisteredProgram extends string,
   TAccountUserWallet extends string,
   TAccountUser extends string,
-  TAccountRegisteredProgramSourceAccount extends string,
   TAccountProgramUserState extends string,
-  TAccountRecord extends string,
-  TAccountStatureVault extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof STATURE_PROGRAM_ADDRESS,
 >(
-  input: UpdateUserStatureInput<
-    TAccountSigner,
+  input: CreateProgramUserStateInput<
+    TAccountAuthority,
     TAccountTargetProgram,
     TAccountRegisteredProgram,
     TAccountUserWallet,
     TAccountUser,
-    TAccountRegisteredProgramSourceAccount,
     TAccountProgramUserState,
-    TAccountRecord,
-    TAccountStatureVault,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateUserStatureInstruction<
+): CreateProgramUserStateInstruction<
   TProgramAddress,
-  TAccountSigner,
+  TAccountAuthority,
   TAccountTargetProgram,
   TAccountRegisteredProgram,
   TAccountUserWallet,
   TAccountUser,
-  TAccountRegisteredProgramSourceAccount,
   TAccountProgramUserState,
-  TAccountRecord,
-  TAccountStatureVault,
   TAccountSystemProgram
 > {
   // Program address.
@@ -401,33 +307,24 @@ export function getUpdateUserStatureInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
     targetProgram: { value: input.targetProgram ?? null, isWritable: false },
     registeredProgram: {
       value: input.registeredProgram ?? null,
-      isWritable: true,
+      isWritable: false,
     },
     userWallet: { value: input.userWallet ?? null, isWritable: false },
-    user: { value: input.user ?? null, isWritable: true },
-    registeredProgramSourceAccount: {
-      value: input.registeredProgramSourceAccount ?? null,
-      isWritable: true,
-    },
+    user: { value: input.user ?? null, isWritable: false },
     programUserState: {
       value: input.programUserState ?? null,
       isWritable: true,
     },
-    record: { value: input.record ?? null, isWritable: true },
-    statureVault: { value: input.statureVault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -438,69 +335,58 @@ export function getUpdateUserStatureInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.signer),
+      getAccountMeta(accounts.authority),
       getAccountMeta(accounts.targetProgram),
       getAccountMeta(accounts.registeredProgram),
       getAccountMeta(accounts.userWallet),
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.registeredProgramSourceAccount),
       getAccountMeta(accounts.programUserState),
-      getAccountMeta(accounts.record),
-      getAccountMeta(accounts.statureVault),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getUpdateUserStatureInstructionDataEncoder().encode(
-      args as UpdateUserStatureInstructionDataArgs,
-    ),
+    data: getCreateProgramUserStateInstructionDataEncoder().encode({}),
     programAddress,
-  } as UpdateUserStatureInstruction<
+  } as CreateProgramUserStateInstruction<
     TProgramAddress,
-    TAccountSigner,
+    TAccountAuthority,
     TAccountTargetProgram,
     TAccountRegisteredProgram,
     TAccountUserWallet,
     TAccountUser,
-    TAccountRegisteredProgramSourceAccount,
     TAccountProgramUserState,
-    TAccountRecord,
-    TAccountStatureVault,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedUpdateUserStatureInstruction<
+export type ParsedCreateProgramUserStateInstruction<
   TProgram extends string = typeof STATURE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    authority: TAccountMetas[0];
     /**
-     * The program calling this MUST sign/authorize via its PDA or specific key
-     * In a Program-to-Program model, this is usually a PDA from the calling program
+     * The Program ID you are whitelisting
+     * If this isn't a valid Program ID, the program_data account derivation will fail.
      */
-    signer: TAccountMetas[0];
     targetProgram: TAccountMetas[1];
     registeredProgram: TAccountMetas[2];
     userWallet: TAccountMetas[3];
     user: TAccountMetas[4];
-    registeredProgramSourceAccount: TAccountMetas[5];
-    programUserState: TAccountMetas[6];
-    record: TAccountMetas[7];
-    statureVault: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
+    programUserState: TAccountMetas[5];
+    systemProgram: TAccountMetas[6];
   };
-  data: UpdateUserStatureInstructionData;
+  data: CreateProgramUserStateInstructionData;
 };
 
-export function parseUpdateUserStatureInstruction<
+export function parseCreateProgramUserStateInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateUserStatureInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+): ParsedCreateProgramUserStateInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -513,17 +399,16 @@ export function parseUpdateUserStatureInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      signer: getNextAccount(),
+      authority: getNextAccount(),
       targetProgram: getNextAccount(),
       registeredProgram: getNextAccount(),
       userWallet: getNextAccount(),
       user: getNextAccount(),
-      registeredProgramSourceAccount: getNextAccount(),
       programUserState: getNextAccount(),
-      record: getNextAccount(),
-      statureVault: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getUpdateUserStatureInstructionDataDecoder().decode(instruction.data),
+    data: getCreateProgramUserStateInstructionDataDecoder().decode(
+      instruction.data,
+    ),
   };
 }

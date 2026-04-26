@@ -19,6 +19,7 @@ import {
 import {
   parseCreateAdminInstruction,
   parseCreateProgramInstruction,
+  parseCreateProgramUserStateInstruction,
   parseCreateUserInstruction,
   parseInvokeStatureUpdateCpiInstruction,
   parseUpdateAdminInstruction,
@@ -32,6 +33,7 @@ import {
   parseWithdrawFundsInstruction,
   type ParsedCreateAdminInstruction,
   type ParsedCreateProgramInstruction,
+  type ParsedCreateProgramUserStateInstruction,
   type ParsedCreateUserInstruction,
   type ParsedInvokeStatureUpdateCpiInstruction,
   type ParsedUpdateAdminInstruction,
@@ -123,6 +125,7 @@ export function identifyStatureAccount(
 export enum StatureInstruction {
   CreateAdmin,
   CreateProgram,
+  CreateProgramUserState,
   CreateUser,
   InvokeStatureUpdateCpi,
   UpdateAdmin,
@@ -161,6 +164,17 @@ export function identifyStatureInstruction(
     )
   ) {
     return StatureInstruction.CreateProgram;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([175, 102, 44, 242, 219, 29, 33, 146]),
+      ),
+      0,
+    )
+  ) {
+    return StatureInstruction.CreateProgramUserState;
   }
   if (
     containsBytes(
@@ -298,6 +312,9 @@ export type ParsedStatureInstruction<
       instructionType: StatureInstruction.CreateProgram;
     } & ParsedCreateProgramInstruction<TProgram>)
   | ({
+      instructionType: StatureInstruction.CreateProgramUserState;
+    } & ParsedCreateProgramUserStateInstruction<TProgram>)
+  | ({
       instructionType: StatureInstruction.CreateUser;
     } & ParsedCreateUserInstruction<TProgram>)
   | ({
@@ -348,6 +365,13 @@ export function parseStatureInstruction<TProgram extends string>(
       return {
         instructionType: StatureInstruction.CreateProgram,
         ...parseCreateProgramInstruction(instruction),
+      };
+    }
+    case StatureInstruction.CreateProgramUserState: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: StatureInstruction.CreateProgramUserState,
+        ...parseCreateProgramUserStateInstruction(instruction),
       };
     }
     case StatureInstruction.CreateUser: {

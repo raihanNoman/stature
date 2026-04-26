@@ -36,7 +36,7 @@ export default function RegisterProgramForm() {
 
       const ix = await getCreateProgramInstructionAsync({
         name,
-        'payer': signer, 
+        'authority': signer, 
         'targetProgram': address(programId)
       });
       const pda = ix.accounts[1]?.address;
