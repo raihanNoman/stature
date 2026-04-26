@@ -7,6 +7,11 @@ pub use register_program::*;
 pub mod register_user;
 pub use register_user::*;
 
+
+pub mod init_program_user_state;
+pub use init_program_user_state::*;
+
+
 pub mod withdraw;
 pub use withdraw::*;
 

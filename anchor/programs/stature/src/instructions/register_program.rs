@@ -49,8 +49,12 @@ pub fn register_program(ctx: Context<RegisterProgram>, name: String) -> Result<(
     registered_program.weight = 1; // Default weight
     registered_program.is_verified = false;
     registered_program.is_suspended = false;
+    registered_program.record_count = 0;
+    registered_program.max_record_cap = 10;
     registered_program.since = Clock::get()?.unix_timestamp;
     registered_program.bump = ctx.bumps.registered_program;
+
+
 
     msg!(
         "✅ Program {} registered in Stature Protocol",

@@ -205,6 +205,121 @@
       ]
     },
     {
+      "name": "create_program_user_state",
+      "discriminator": [
+        175,
+        102,
+        44,
+        242,
+        219,
+        29,
+        33,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "target_program",
+          "docs": [
+            "The Program ID you are whitelisting",
+            "If this isn't a valid Program ID, the program_data account derivation will fail."
+          ]
+        },
+        {
+          "name": "registered_program",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  101,
+                  114,
+                  101,
+                  100,
+                  95,
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_wallet"
+        },
+        {
+          "name": "user",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_user_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "registered_program"
+              },
+              {
+                "kind": "account",
+                "path": "user_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_user",
       "discriminator": [
         108,
@@ -251,6 +366,193 @@
       "args": [
         {
           "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "invoke_stature_update_cpi",
+      "discriminator": [
+        138,
+        156,
+        179,
+        85,
+        223,
+        89,
+        42,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "target_program"
+        },
+        {
+          "name": "registered_program",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  101,
+                  114,
+                  101,
+                  100,
+                  95,
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_wallet"
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registered_program_source_account",
+          "writable": true
+        },
+        {
+          "name": "program_user_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "registered_program"
+              },
+              {
+                "kind": "account",
+                "path": "user_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_wallet"
+              },
+              {
+                "kind": "account",
+                "path": "registered_program"
+              },
+              {
+                "kind": "account",
+                "path": "registered_program_source_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stature_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  117,
+                  114,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stature_program",
+          "address": "9VFHpUQnHsG94AKzGfzf4mAeunxcQw8G9am6FfVEBVZb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "tx_value",
+          "type": "i64"
+        },
+        {
+          "name": "memo",
           "type": "string"
         }
       ]
@@ -859,6 +1161,32 @@
               {
                 "kind": "account",
                 "path": "registered_program_source_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stature_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  117,
+                  114,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
               }
             ]
           }

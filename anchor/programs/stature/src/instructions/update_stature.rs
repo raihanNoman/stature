@@ -1,4 +1,4 @@
-use crate::calculate_stature_gain;
+use crate::{STATURE_UPDATE_FEE, calculate_stature_gain};
 use crate::constants::{ANCHOR_DISCRIMINATOR};
 use crate::error::ErrorCode;
 use crate::state::{ ProgramUserState, RegisteredProgram, StatureRecord, StatureUser};
@@ -20,6 +20,7 @@ pub struct UpdateUserStatureCPI<'info> {
         mut,
         seeds = [b"registered_program", target_program.key().as_ref()],
         bump = registered_program.bump,
+        owner = crate::ID, 
         constraint = !registered_program.is_suspended@ ErrorCode::ProgramSuspended, 
         constraint = registered_program.is_verified @ ErrorCode::ProgramNotVerified,
         constraint = registered_program.stature > 0 @ ErrorCode::ProgramInBadStanding,
@@ -71,6 +72,9 @@ pub struct UpdateUserStatureCPI<'info> {
     )]
     pub record: Account<'info, StatureRecord>,
 
+        /// CHECK: Stature Protocol Fee Vault
+    #[account(mut, seeds = [b"stature_vault"], bump)]
+    pub stature_vault: UncheckedAccount<'info>, 
     pub system_program: Program<'info, System>,
 }
 
@@ -93,6 +97,18 @@ pub fn update_user_stature_via_cpi(
     let source_account =  &mut ctx.accounts.registered_program_source_account;
     let record = &mut ctx.accounts.record;
     let program_user_state = &mut ctx.accounts.program_user_state;
+
+
+    anchor_lang::system_program::transfer(
+        CpiContext::new(
+            *ctx.accounts.system_program.key,
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.signer.to_account_info(),
+                to: ctx.accounts.stature_vault.to_account_info(),
+            },
+        ),
+        STATURE_UPDATE_FEE,
+    )?;
 
 
     require!(memo.len() <= 64, ErrorCode::StringTooLong);

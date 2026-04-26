@@ -60,6 +60,10 @@ pub mod stature {
         instructions::register_user::register_user(ctx, name)
     }
 
+    pub fn create_program_user_state(ctx: Context<InitProgramUserState>) -> Result<()> {
+        instructions::init_program_user_state::init_program_user_state(ctx)
+    }
+
     pub fn update_admin(ctx: Context<ManageAdmin>, new_admin: Pubkey) -> Result<()> {
         instructions::manage_admin::manage_admin(ctx, new_admin)
     }

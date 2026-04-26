@@ -1,3 +1,5 @@
+use crate::constants::ANCHOR_DISCRIMINATOR;
+use crate::error::ErrorCode;
 pub use crate::program::Stature;
 use crate::state::{ProgramUserState, RegisteredProgram, StatureRecord, StatureUser};
 use anchor_lang::prelude::*;
@@ -14,18 +16,69 @@ pub struct StatureUpdateBundle<'info> {
     pub signer: Signer<'info>,
     /// CHECK: The executable program ID
     pub target_program: UncheckedAccount<'info>,
-    #[account(mut)]
+
+    #[account(
+        mut,
+        seeds = [b"registered_program", target_program.key().as_ref()],
+        bump = registered_program.bump,
+        constraint = !registered_program.is_suspended@ ErrorCode::ProgramSuspended, 
+        constraint = registered_program.is_verified @ ErrorCode::ProgramNotVerified,
+        constraint = registered_program.stature > 0 @ ErrorCode::ProgramInBadStanding,
+        constraint = registered_program.target_program == target_program.key()
+    )]
     pub registered_program: Account<'info, crate::state::RegisteredProgram>,
     /// CHECK: The user's main wallet
     pub user_wallet: SystemAccount<'info>,
-    #[account(mut)]
+  
+
+    #[account(
+              mut, 
+        // init_if_needed, 
+        // payer = signer,
+        // space = ANCHOR_DISCRIMINATOR + crate::state::StatureUser::INIT_SPACE,
+        seeds = [b"user", user_wallet.key().as_ref()], 
+        bump,
+    )]
+    // #[account(mut)]
     pub user: Account<'info, crate::state::StatureUser>,
+    // #[account(mut)]
+    // pub user: UncheckedAccount<'info>,
     /// CHECK: The data account from the calling program (source)
-    #[account(mut)]
+
+    #[account(
+        mut, 
+        //owner = target_program.key() @ ErrorCode::InvalidSourceOwner, 
+        constraint = registered_program_source_account.owner.key() == registered_program.target_program@ ErrorCode::InvalidSourceOwner, 
+    )]
     pub registered_program_source_account: UncheckedAccount<'info>,
-    #[account(mut)]
+
+
+    #[account(
+              mut, 
+        // init_if_needed,
+        // payer = signer,
+        // space = ANCHOR_DISCRIMINATOR + ProgramUserState::INIT_SPACE,
+        seeds = [b"state", registered_program.key().as_ref(), user_wallet.key().as_ref()], // increase count for number of items from that 
+        bump
+    )]
     pub program_user_state: Account<'info, crate::state::ProgramUserState>,
-    #[account(mut)]
+
+    // #[account(mut)]
+   //  pub program_user_state: Account<'info, crate::state::ProgramUserState>,
+  //  pub program_user_state: UncheckedAccount<'info>,
+
+    #[account(
+        init,
+        payer = signer,
+        space = ANCHOR_DISCRIMINATOR + StatureRecord::INIT_SPACE,
+        seeds = [
+            b"record", 
+            user_wallet.key().as_ref(), 
+            registered_program.key().as_ref(), // Added for extra isolation
+            registered_program_source_account.key().as_ref(), 
+        ],
+        bump
+    )]
     pub record: Account<'info, crate::state::StatureRecord>,
 
     /// CHECK: Stature Protocol Fee Vault
@@ -113,6 +166,7 @@ pub fn invoke_stature_update<'info>(
         program_user_state: bundle.program_user_state.clone(),
         record: bundle.record.clone(),
         system_program: bundle.system_program.clone(),
+        stature_vault: bundle.stature_vault.clone()
     };
 
     // 3. Create the Instruction manually using Anchor's helpers
@@ -120,8 +174,8 @@ pub fn invoke_stature_update<'info>(
         tx_value_lamports: tx_value,
         memo,
     });
-    let mut ix_data = crate::instruction::UpdateUserStature::DISCRIMINATOR.to_vec();
-    ix_data.append(&mut data);
+    // let mut ix_data = crate::instruction::UpdateUserStature::DISCRIMINATOR.to_vec();
+    // ix_data.append(&mut data);
 
     // 4. Map the AccountInfos
     let infos = cpi_accounts.to_account_infos();
@@ -130,7 +184,7 @@ pub fn invoke_stature_update<'info>(
     let ix = anchor_lang::solana_program::instruction::Instruction {
         program_id: crate::ID,
         accounts: metas,
-        data: ix_data,
+        data: data,
     };
 
     // 5. Invoke (Use invoke_signed if the caller is a PDA)
