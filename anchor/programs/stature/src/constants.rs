@@ -7,6 +7,8 @@ use anchor_lang::prelude::*;
 // pub const MAXIMUM_AGE: u64 = 100; // allow price feed 100 sec old, to avoid stale price feed errors
 
 
+pub const STATURE_UPDATE_FEE: u64 = 1_000_000; // 0.001 SOL
+
 // pub const PROGRAM_AUTHOR: &str = "My Personal wallet key";
 pub const MAX_COMPANY_WEIGHT: u16 = 10; // used by admin
 // pub const MAX_REWARD: i64 = 100;

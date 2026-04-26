@@ -1,5 +1,5 @@
-use crate::{STATURE_UPDATE_FEE, calculate_stature_gain};
-use crate::constants::{ANCHOR_DISCRIMINATOR};
+use crate::{ calculate_stature_gain };
+use crate::constants::{ANCHOR_DISCRIMINATOR, STATURE_UPDATE_FEE};
 use crate::error::ErrorCode;
 use crate::state::{ ProgramUserState, RegisteredProgram, StatureRecord, StatureUser};
 

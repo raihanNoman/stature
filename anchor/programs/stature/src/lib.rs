@@ -10,8 +10,6 @@ pub use instructions::*;
 pub mod state;
 pub use state::*;
 
-pub mod stature_cpi; // This "activates" the file
-pub use stature_cpi::*; // This makes the helper functions accessible
 
 // #[cfg(test)]
 // mod tests;
@@ -100,15 +98,6 @@ pub mod stature {
         instructions::update_stature::update_user_stature_via_cpi(ctx, tx_value_lamports, memo)
     }
 
-    // This exposes the logic to the outside world
-    pub fn invoke_stature_update_cpi(
-        ctx: Context<StatureUpdateBundle>, // Your account struct
-        tx_value: i64,
-        memo: String,
-    ) -> Result<()> {
-        // Route the call to your stature_cpi.rs file
-        crate::stature_cpi::invoke_stature_update(&ctx.accounts, tx_value, memo)
-    }
 
     // If you have the interface version
 }
